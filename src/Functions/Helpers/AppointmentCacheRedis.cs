@@ -41,7 +41,7 @@ namespace Functions.Helpers
                 return true; // No appointments for the date
             }
             string serializedAppointments = redisValue.ToString();
-            var appointmentsForDate = JsonConvert.DeserializeObject<List<Appointment>>(serializedAppointments) ?? new List<Appointment>();
+            var appointmentsForDate = JsonConvert.DeserializeObject<List<Appointment>>(serializedAppointments) ?? [];
             // Check if the appointment is already in the cache
             return !appointmentsForDate.Exists(a => a.Equals(appointment));
         }
