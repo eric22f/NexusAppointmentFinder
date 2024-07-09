@@ -150,3 +150,6 @@ obj/
 
 # Azure Cloud related
 *.publishsettings
+
+# ggshield
+.cache_ggshield
