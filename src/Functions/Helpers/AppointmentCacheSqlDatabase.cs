@@ -2,6 +2,7 @@ using System.Data.SqlClient;
 using System.Data;
 using Functions.Models;
 using Microsoft.Extensions.Configuration;
+using System.Configuration;
 
 namespace Functions.Helpers
 {
@@ -9,15 +10,13 @@ namespace Functions.Helpers
     {
         private readonly string _connectionString;
 
-        public AppointmentCacheSqlDatabase(string connectionString)
+        public AppointmentCacheSqlDatabase()
         {
             var config = new ConfigurationBuilder()
                 .AddEnvironmentVariables()
                 .Build();
             
-            connectionString = "Server=tcp:svr-faust-sandbox-db.database.windows.net,1433;Initial Catalog=faust-sandbox;Persist Security Info=False;User ID=;Password=;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
-
-            _connectionString = string.IsNullOrWhiteSpace(connectionString) ? config["SqlConnectionString"] ?? string.Empty : connectionString;
+            _connectionString = config["SqlConnectionString"] ?? throw new ConfigurationErrorsException("Configuration setting 'SqlConnectionString' not found.");
         }
 
         // Add the appointment to the database
@@ -33,7 +32,7 @@ namespace Functions.Helpers
         {
             var appointments = new List<Appointment>();
 
-            using (SqlConnection connection = new SqlConnection(_connectionString))
+            using (SqlConnection connection = new (_connectionString))
             {
                 string query = "SELECT * FROM NexusAppointmentsAvailability WHERE LocationId = @LocationId AND AppointmentDate >= @StartDate AND AppointmentDate <= @EndDate";
                 SqlCommand command = new SqlCommand(query, connection);
