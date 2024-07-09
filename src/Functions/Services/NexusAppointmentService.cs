@@ -19,44 +19,45 @@ namespace Functions.Services
         private const int TotalDays = 7;
         private readonly DateTime _fromDate = DateTime.Today.AddDays(1);
         private readonly DateTime _toDate = DateTime.Today.AddDays(TotalDays + 1);
-        private readonly ILogger _logger;
+        private readonly ILogger<NexusAppointmentService> _logger;
         private readonly string _traceId;
         private readonly AppointmentCacheFactory _appointmentCacheFactory;
 
         public bool IsProcessAppointmentsSuccess { get; private set; }
 
-        public NexusAppointmentService(Tracer tracer, AppointmentCacheFactory appointmentCacheFactory)
+        public NexusAppointmentService(
+            ILogger<NexusAppointmentService> logger,
+            IConfiguration configuration,
+            Tracer tracer,
+            AppointmentCacheFactory appointmentCacheFactory)
         {
-            _configuration = new ConfigurationBuilder()
-                .AddEnvironmentVariables()
-                .Build();
-            _logger = new LoggerFactory().CreateLogger<NexusAppointmentService>();
-        
-            _traceId = tracer?.Id ?? throw new ArgumentNullException(nameof(tracer));
-
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _traceId = tracer.Id ?? throw new ArgumentNullException(nameof(tracer));
             _appointmentCacheFactory = appointmentCacheFactory ?? throw new ArgumentNullException(nameof(appointmentCacheFactory));
-        
+
             _nexusAppointmentsApiUrl = _configuration["NexusAppointmentsApiUrl"] 
                 ?? "https://ttp.cbp.dhs.gov/schedulerapi/locations/[LOCATION_ID]/slots?startTimestamp=[START_DATE]&endTimestamp=[END_DATE]";
-            _logger.LogInformation("[{_traceId}]NexusAppointmentService initialized");
-            _logger.LogInformation("[{_traceId}]NexusAppointmentsApiUrl: {_nexusAppointmentsApiUrl}", _nexusAppointmentsApiUrl);
+            _logger.LogInformation("[{_traceId}] NexusAppointmentService initialized");
+            _logger.LogInformation($"[{_traceId}] NexusAppointmentsApiUrl: {_nexusAppointmentsApiUrl}");
         }
 
         // This method fetches appointment data from the Nexus Appointments API
         // converts to a list of Appointment objects 
         // checks for new openings
         // then submits the new open appointments to the service bus
-        // Returns the number of appointments processed or -1 if an error occurred
+        // and caches the new appointments
+        // Returns all available appointments and sets IsProcessAppointmentsSuccess to true if successful
         public async Task<List<Appointment>> ProcessAppointments()
         {
             IsProcessAppointmentsSuccess = false;
-            _logger.LogTrace($"[{_traceId}]ProcessAppointments started - Location ID: {LocationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
+            _logger.LogInformation($"[{_traceId}] ProcessAppointments started - Location ID: {LocationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
             var stopwatch = new Stopwatch();
             stopwatch.Start();
             var stopwatchTotal = new Stopwatch();
             stopwatchTotal.Start();
-            List<Appointment> appointments = new ();
-            List<Appointment> openAppointments = new ();
+            List<Appointment> appointments = new();
+            List<Appointment> openAppointments = new();
             try
             {
                 // Fetch appointment data from API
@@ -64,27 +65,27 @@ namespace Functions.Services
                 string uri = GetNexusAppointmentsApiUrl();
                 var appointmentData = await httpClient.GetStringAsync(uri);
                 stopwatch.Stop();
-                _logger.LogTrace($"[{_traceId}]Fetching appointment data took: {stopwatch.ElapsedMilliseconds} ms");
+                _logger.LogTrace($"[{_traceId}] Fetching appointment data took: {stopwatch.ElapsedMilliseconds} ms");
                 stopwatch.Restart();
 
                 // Convert JSON data to list of Appointments
                 var appointmentConverter = new AppointmentConverter();
                 appointments = appointmentConverter.ConvertFromJson(appointmentData, LocationId);
                 stopwatch.Stop();
-                _logger.LogTrace($"[{_traceId}]Converting JSON data took: {stopwatch.ElapsedMilliseconds} ms to process {appointments.Count} appointments");
+                _logger.LogTrace($"[{_traceId}] Converting JSON data took: {stopwatch.ElapsedMilliseconds} ms to process {appointments.Count} appointments");
                 stopwatch.Restart();
 
                 // Filter appointments with openings
                 openAppointments = appointments.Where(a => a.Openings > 0).ToList();
                 stopwatch.Stop();
-                _logger.LogTrace($"[{_traceId}]Filtering appointments took: {stopwatch.ElapsedMilliseconds} ms to locate {openAppointments.Count} available appointments");
+                _logger.LogTrace($"[{_traceId}] Filtering appointments took: {stopwatch.ElapsedMilliseconds} ms to locate {openAppointments.Count} available appointments");
                 stopwatch.Restart();
 
                 // Check which appointments are new and have not been processed before
                 var appointmentsCache = _appointmentCacheFactory.CreateCacheClient();
                 openAppointments = openAppointments.Where(a => appointmentsCache.IsAppointmentNew(a)).ToList();
                 stopwatch.Stop();
-                _logger.LogTrace($"[{_traceId}]Checking cache for new appointments took: {stopwatch.ElapsedMilliseconds} ms");
+                _logger.LogTrace($"[{_traceId}] Checking cache for new appointments took: {stopwatch.ElapsedMilliseconds} ms");
                 stopwatch.Restart();
 
                 // Send open appointments to Service Bus
@@ -92,7 +93,7 @@ namespace Functions.Services
                 var message = new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(openAppointments)));
                 await serviceBus.SendAsync(message);
                 stopwatch.Stop();
-                _logger.LogTrace($"[{_traceId}]Sending the new appointments to Service Bus took: {stopwatch.ElapsedMilliseconds} ms");
+                _logger.LogTrace($"[{_traceId}] Sending the new appointments to Service Bus took: {stopwatch.ElapsedMilliseconds} ms");
 
                 // Cache the open appointments
                 stopwatch.Stop();
@@ -103,12 +104,12 @@ namespace Functions.Services
             catch (Exception ex)
             {
                 // Handle any exceptions
-                _logger.LogError($"[{_traceId}]An error occurred while processing appointments: {ex.Message}");
+                _logger.LogError($"[{_traceId}] An error occurred while processing appointments: {ex.Message}");
             }
             finally
             {
                 stopwatchTotal.Stop();
-                _logger.LogInformation($"[{_traceId}]ProcessAppointments took: {stopwatchTotal.ElapsedMilliseconds} ms to process {appointments.Count} appointments and found {openAppointments.Count} available appointments for location ID: {LocationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
+                _logger.LogInformation($"[{_traceId}] ProcessAppointments took: {stopwatchTotal.ElapsedMilliseconds} ms to process {appointments.Count} appointments and found {openAppointments.Count} available appointments for location ID: {LocationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
             }
             return openAppointments;
         }
