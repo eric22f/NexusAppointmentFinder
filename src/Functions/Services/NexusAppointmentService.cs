@@ -21,15 +21,15 @@ namespace Functions.Services
         private readonly ILogger _logger;
         private readonly string _traceId;
 
-        public NexusAppointmentService()
+        public NexusAppointmentService(Tracer tracer)
         {
             _configuration = new ConfigurationBuilder()
                 .AddEnvironmentVariables()
                 .Build();
             _logger = new LoggerFactory().CreateLogger<NexusAppointmentService>();
-
-            _traceId = Tracer.Id;
-
+        
+            _traceId = tracer?.Id ?? throw new ArgumentNullException(nameof(tracer));
+        
             _nexusAppointmentsApiUrl = _configuration["NexusAppointmentsApiUrl"] 
                 ?? "https://ttp.cbp.dhs.gov/schedulerapi/locations/[LOCATION_ID]/slots?startTimestamp=[START_DATE]&endTimestamp=[END_DATE]";
             _logger.LogInformation("[{_traceId}]NexusAppointmentService initialized");

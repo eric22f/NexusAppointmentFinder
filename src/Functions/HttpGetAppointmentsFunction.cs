@@ -7,23 +7,20 @@ using Functions.Helpers;
 
 namespace Functions
 {
-    public class HttpGetAppointmentsFunction
+    public class HttpGetAppointmentsFunction(ILogger<HttpGetAppointmentsFunction> logger, NexusAppointmentService appointmentsSvc,
+        Tracer tracer)
     {
-        private readonly ILogger<HttpGetAppointmentsFunction> _logger;
-        private readonly NexusAppointmentService _appointmentsSvc;
-        public HttpGetAppointmentsFunction(ILogger<HttpGetAppointmentsFunction> logger, NexusAppointmentService appointmentsSvc)
-        {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _appointmentsSvc = appointmentsSvc ?? throw new ArgumentNullException(nameof(appointmentsSvc));
-        }
+        private readonly ILogger<HttpGetAppointmentsFunction> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        private readonly NexusAppointmentService _appointmentsSvc = appointmentsSvc ?? throw new ArgumentNullException(nameof(appointmentsSvc));
+        private readonly Tracer _tracer = tracer ?? throw new ArgumentNullException(nameof(tracer));
 
         [Function("HttpGetAppointmentsFunction")]
         public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req)
         {
-            _logger.LogInformation($"[{Tracer.Id}]HttpGetAppointmentsFunction requested.");
+            _logger.LogInformation($"[{_tracer.Id}]HttpGetAppointmentsFunction requested.");
             int result = await _appointmentsSvc.ProcessAppointments();
         
-            return result == -1 ? new BadRequestObjectResult($"An error occurred processing appointments. (Reference trace log id: {Tracer.Id})") 
+            return result == -1 ? new BadRequestObjectResult($"An error occurred processing appointments. (Reference trace log id: {_tracer.Id})") 
                 : new OkObjectResult($"Processed {result} appointments");
         }
     }

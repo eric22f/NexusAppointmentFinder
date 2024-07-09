@@ -3,12 +3,13 @@ using System.Text;
 
 namespace Functions.Helpers
 {
-    public static class Tracer
+    // Genereates a unique Id for logging
+    public class Tracer
     {
-        private static readonly string _traceId;
-        private static readonly long _baseTicks = new DateTime(2024,7,1).Ticks;
+        private readonly string _traceId;
+        private readonly long _baseTicks = new DateTime(2024,7,1).Ticks;
 
-        static Tracer()
+        public Tracer()
         {
             var ticks = DateTime.UtcNow.Ticks - _baseTicks;
             string base36 = Base36Converter.ToBase36(ticks);
@@ -16,10 +17,10 @@ namespace Functions.Helpers
 
         }
 
-        // Returns unique Id used for logging
-        public static string Id { get { return _traceId; } }
+        // Unique Id for logging
+        public string Id { get { return _traceId; } }
 
-        public static DateTime GetDateTimeFromId(string id)
+        public DateTime GetDateTimeFromId(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(id));
