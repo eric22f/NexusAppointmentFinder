@@ -19,10 +19,21 @@ namespace Functions
             FunctionContext context)
         {
             _logger.LogInformation($"[{_tracer.Id}]{context.FunctionDefinition.Name} requested with Invocation ID: {context.InvocationId}.");
-            int result = await _appointmentsSvc.ProcessAppointments();
+            var availableAppointments = await _appointmentsSvc.ProcessAppointments();
         
-            return result == -1 ? new BadRequestObjectResult($"An error occurred processing appointments. (Reference trace log id: {_tracer.Id})") 
-                : new OkObjectResult($"Processed {result} appointments");
+            if (!_appointmentsSvc.IsProcessAppointmentsSuccess) 
+            { 
+                return new BadRequestObjectResult($"An error occurred processing appointments. (Reference trace log id: {_tracer.Id})");
+            }
+            if (availableAppointments.Count == 0)
+            {
+                return new OkObjectResult($"No appointments available.");
+            }
+            if (availableAppointments.Count == 1)
+            {
+                return new OkObjectResult($"One appointment found:\n{availableAppointments}");
+            }
+            return new OkObjectResult($"Open appointments found: {availableAppointments.Count}.\n{availableAppointments}");
         }
     }
 }

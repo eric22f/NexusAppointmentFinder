@@ -10,24 +10,26 @@ namespace Functions.Helpers
     // Cache processed appointments in Redis
     public class AppointmentCacheRedis : AppointmentCacheBase
     {
+        private readonly ILogger<AppointmentCacheRedis> _logger;
+        private readonly string _traceId;
+        private readonly IConfiguration _config;
         private readonly IDatabase _redisDatabase;
 
-        public AppointmentCacheRedis(ILogger<AppointmentCacheRedis> logger, string traceId, IConfiguration configuration) : base(logger, traceId)
+        public AppointmentCacheRedis(ILogger<AppointmentCacheRedis> logger, string traceId, IConfiguration config)
         {
-            var config = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _traceId = traceId ?? throw new ArgumentNullException(nameof(traceId));
+            _config = config ?? throw new ArgumentNullException(nameof(config));
             string redisConnectionString = config["RedisConnectionString"] ?? throw new ConfigurationErrorsException("Configuration setting 'RedisConnectionString' not found.");
             var redisConnection = ConnectionMultiplexer.Connect(redisConnectionString);
             _redisDatabase = redisConnection.GetDatabase();
-        }
-/*        {
-            var config = new ConfigurationBuilder()
-                .AddEnvironmentVariables()
-                .Build();
-            string redisConnectionString = config["RedisConnectionString"] ?? throw new ConfigurationErrorsException("Configuration setting 'RedisConnectionString' not found.");
-            var redisConnection = ConnectionMultiplexer.Connect(redisConnectionString);
-            _redisDatabase = redisConnection.GetDatabase();
-        }
-*/
+            // Check if the Redis database connection is valid
+            if (_redisDatabase == null)
+            {
+                throw new Exception("Failed to establish connection to Redis database.");
+            }
+         }
+
         // Check if an appointment is new
         public override bool IsAppointmentNew(Appointment appointment)
         {

@@ -21,8 +21,11 @@ namespace Functions.Services
         private readonly DateTime _toDate = DateTime.Today.AddDays(TotalDays + 1);
         private readonly ILogger _logger;
         private readonly string _traceId;
+        private readonly AppointmentCacheFactory _appointmentCacheFactory;
 
-        public NexusAppointmentService(Tracer tracer)
+        public bool IsProcessAppointmentsSuccess { get; private set; }
+
+        public NexusAppointmentService(Tracer tracer, AppointmentCacheFactory appointmentCacheFactory)
         {
             _configuration = new ConfigurationBuilder()
                 .AddEnvironmentVariables()
@@ -30,6 +33,8 @@ namespace Functions.Services
             _logger = new LoggerFactory().CreateLogger<NexusAppointmentService>();
         
             _traceId = tracer?.Id ?? throw new ArgumentNullException(nameof(tracer));
+
+            _appointmentCacheFactory = appointmentCacheFactory ?? throw new ArgumentNullException(nameof(appointmentCacheFactory));
         
             _nexusAppointmentsApiUrl = _configuration["NexusAppointmentsApiUrl"] 
                 ?? "https://ttp.cbp.dhs.gov/schedulerapi/locations/[LOCATION_ID]/slots?startTimestamp=[START_DATE]&endTimestamp=[END_DATE]";
@@ -42,8 +47,9 @@ namespace Functions.Services
         // checks for new openings
         // then submits the new open appointments to the service bus
         // Returns the number of appointments processed or -1 if an error occurred
-        public async Task<int> ProcessAppointments()
+        public async Task<List<Appointment>> ProcessAppointments()
         {
+            IsProcessAppointmentsSuccess = false;
             _logger.LogTrace($"[{_traceId}]ProcessAppointments started - Location ID: {LocationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -75,7 +81,7 @@ namespace Functions.Services
                 stopwatch.Restart();
 
                 // Check which appointments are new and have not been processed before
-                var appointmentsCache = AppointmentCacheFactory.CreateCacheClient(_configuration, (ILogger<AppointmentCacheBase>)_logger, _traceId);
+                var appointmentsCache = _appointmentCacheFactory.CreateCacheClient();
                 openAppointments = openAppointments.Where(a => appointmentsCache.IsAppointmentNew(a)).ToList();
                 stopwatch.Stop();
                 _logger.LogTrace($"[{_traceId}]Checking cache for new appointments took: {stopwatch.ElapsedMilliseconds} ms");
@@ -92,19 +98,19 @@ namespace Functions.Services
                 stopwatch.Stop();
                 appointmentsCache.CacheAppointments(LocationId, _fromDate, _toDate, openAppointments);
 
-                return openAppointments.Count;
+                IsProcessAppointmentsSuccess = true;
             }
             catch (Exception ex)
             {
                 // Handle any exceptions
                 _logger.LogError($"[{_traceId}]An error occurred while processing appointments: {ex.Message}");
-                return -1;
             }
             finally
             {
                 stopwatchTotal.Stop();
                 _logger.LogInformation($"[{_traceId}]ProcessAppointments took: {stopwatchTotal.ElapsedMilliseconds} ms to process {appointments.Count} appointments and found {openAppointments.Count} available appointments for location ID: {LocationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
             }
+            return openAppointments;
         }
 
         // Get the URL for the Nexus Appointments API based on Location and start and end dates

@@ -1,6 +1,3 @@
-using Functions.Models;
-using Microsoft.AspNetCore.Components.Forms;
-using Microsoft.Azure.ServiceBus;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -8,30 +5,36 @@ namespace Functions.Helpers
 {
     // This static class is used to create a cache client by first connecting to Redis
     // If Redis is not available then to a database
-    public static class AppointmentCacheFactory
+    public class AppointmentCacheFactory(ILogger<AppointmentCacheFactory> logger, ILoggerFactory loggerFactory,
+        Tracer tracer, IConfiguration config)
     {
-        public static AppointmentCacheBase CreateCacheClient(IConfiguration configuration, ILogger<AppointmentCacheBase> logger, string traceId)
+        private readonly ILogger<AppointmentCacheFactory> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        private readonly ILoggerFactory _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+        private readonly string _traceId = tracer.Id ?? throw new ArgumentNullException(nameof(tracer.Id));
+        private readonly IConfiguration _config = config ?? throw new ArgumentNullException(nameof(config));
+
+        public AppointmentCacheBase CreateCacheClient()
         {
             // Create new Redis cache client
             try
             {
-                var cache = new AppointmentCacheRedis((ILogger<AppointmentCacheRedis>)logger, traceId, configuration);
+                var cache = new AppointmentCacheRedis(_loggerFactory.CreateLogger<AppointmentCacheRedis>(), _traceId, _config);
                 return cache;
             }
             catch (Exception e)
             {
                 // Log the exception
-                logger.LogError($"[{traceId}]Unable to create Redis cache client: {e.Message}", e);
+                _logger.LogError($"[{_traceId}]Unable to create Redis cache client: {e.Message}", e);
             }
             try
             {
                 // Create new Database cache client
-                return new AppointmentCacheSqlDatabase((ILogger<AppointmentCacheSqlDatabase>)logger, traceId, configuration);
+                return new AppointmentCacheSqlDatabase(_loggerFactory.CreateLogger<AppointmentCacheSqlDatabase>(), _traceId, _config);
             }
             catch (Exception e)
             {
                 // Log the exception
-                logger.LogError($"[{traceId}]Unable to create Database cache client: {e.Message}", e);
+                _logger.LogError($"[{_traceId}]Unable to create Database cache client: {e.Message}", e);
             }
             throw new Exception("Unable to create cache client");
         }
