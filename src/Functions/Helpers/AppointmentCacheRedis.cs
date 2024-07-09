@@ -58,7 +58,7 @@ namespace Functions.Helpers
                 // Serialize the appointments
                 var serializedAppointments = JsonConvert.SerializeObject(appointmentsForDate);
                 // Store the appointments in Redis by location and date.  Expire the day after "date"
-                _redisDatabase.StringSet(key, serializedAppointments, expiry: date.AddDays(1) - DateTime.Now);
+                _redisDatabase.StringSet(key, serializedAppointments, expiry: date.AddDays(1) - DateTime.Now, flags: CommandFlags.FireAndForget);
             }
         }
         // Get the appointments from the cache by location and date range
