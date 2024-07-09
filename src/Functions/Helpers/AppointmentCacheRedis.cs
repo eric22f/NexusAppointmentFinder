@@ -24,7 +24,7 @@ namespace Functions.Helpers
             var redisConnection = ConnectionMultiplexer.Connect(redisConnectionString);
             _redisDatabase = redisConnection.GetDatabase();
             // Check if the Redis database connection is valid
-            if (_redisDatabase == null)
+            if (_redisDatabase.Ping() == TimeSpan.Zero)
             {
                 throw new Exception("Failed to establish connection to Redis database.");
             }
