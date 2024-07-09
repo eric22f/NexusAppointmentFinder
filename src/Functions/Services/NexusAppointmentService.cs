@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using System.Text;
 using Newtonsoft.Json;
 using System.Diagnostics;
+using Functions.Models;
 
 namespace Functions.Services
 {
@@ -43,14 +44,14 @@ namespace Functions.Services
         // Returns the number of appointments processed or -1 if an error occurred
         public async Task<int> ProcessAppointments()
         {
+            _logger.LogTrace($"[{_traceId}]ProcessAppointments started - Location ID: {LocationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            var stopwatchTotal = new Stopwatch();
+            stopwatchTotal.Start();
+            var appointments = new List<Appointment>();
             try
             {
-                _logger.LogTrace($"[{_traceId}]ProcessAppointments started - Location ID: {LocationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
-                var stopwatchTotal = new Stopwatch();
-                stopwatchTotal.Start();
-
                 // Fetch appointment data from API
                 HttpClient httpClient = new();
                 string uri = GetNexusAppointmentsApiUrl();
@@ -61,7 +62,7 @@ namespace Functions.Services
 
                 // Convert JSON data to list of Appointments
                 var appointmentConverter = new AppointmentConverter();
-                var appointments = appointmentConverter.ConvertFromJson(appointmentData, LocationId);
+                appointments = appointmentConverter.ConvertFromJson(appointmentData, LocationId);
                 stopwatch.Stop();
                 _logger.LogTrace($"[{_traceId}]Converting JSON data took: {stopwatch.ElapsedMilliseconds} ms to process {appointments.Count} appointments");
                 stopwatch.Restart();
@@ -85,7 +86,10 @@ namespace Functions.Services
                 await serviceBus.SendAsync(message);
                 stopwatch.Stop();
                 _logger.LogTrace($"[{_traceId}]Sending the new appointments to Service Bus took: {stopwatch.ElapsedMilliseconds} ms");
-                _logger.LogInformation($"[{_traceId}]ProcessAppointments took: {stopwatch.ElapsedMilliseconds} ms to process {appointments.Count} appointments and found {openAppointments.Count} available appointments for location ID: {LocationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
+
+                // Cache the open appointments
+                stopwatch.Stop();
+                appointmentsCache.CacheAppointments(LocationId, _fromDate, _toDate, openAppointments);
 
                 return openAppointments.Count;
             }
@@ -94,6 +98,11 @@ namespace Functions.Services
                 // Handle any exceptions
                 _logger.LogError($"[{_traceId}]An error occurred while processing appointments: {ex.Message}");
                 return -1;
+            }
+            finally
+            {
+                stopwatchTotal.Stop();
+                _logger.LogInformation($"[{_traceId}]ProcessAppointments took: {stopwatchTotal.ElapsedMilliseconds} ms to process {appointments.Count} appointments and found {openAppointments.Count} available appointments for location ID: {LocationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
             }
         }
 
