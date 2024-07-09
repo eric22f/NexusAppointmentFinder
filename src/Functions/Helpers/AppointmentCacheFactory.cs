@@ -10,30 +10,28 @@ namespace Functions.Helpers
     // If Redis is not available then to a database
     public static class AppointmentCacheFactory
     {
-        public static AppointmentCacheBase CreateCacheClient(IConfiguration configuration)
+        public static AppointmentCacheBase CreateCacheClient(IConfiguration configuration, ILogger<AppointmentCacheBase> logger, string traceId)
         {
             // Create new Redis cache client
             try
             {
-                var cache = new AppointmentCacheRedis();
+                var cache = new AppointmentCacheRedis((ILogger<AppointmentCacheRedis>)logger, traceId, configuration);
                 return cache;
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 // Log the exception
-                var logger = new LoggerFactory().CreateLogger<AppointmentCacheBase>();
-                logger.LogError("Unable to create Redis cache client");
+                logger.LogError($"[{traceId}]Unable to create Redis cache client: {e.Message}", e);
             }
             try
             {
                 // Create new Database cache client
-                return new AppointmentCacheSqlDatabase();
+                return new AppointmentCacheSqlDatabase((ILogger<AppointmentCacheSqlDatabase>)logger, traceId, configuration);
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 // Log the exception
-                var logger = new LoggerFactory().CreateLogger<AppointmentCacheBase>();
-                logger.LogError("Unable to create Database cache client");
+                logger.LogError($"[{traceId}]Unable to create Database cache client: {e.Message}", e);
             }
             throw new Exception("Unable to create cache client");
         }

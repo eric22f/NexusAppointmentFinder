@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Functions.Models;
 using Microsoft.Extensions.Configuration;
 using System.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Functions.Helpers
 {
@@ -11,8 +12,14 @@ namespace Functions.Helpers
     {
         private readonly IDatabase _redisDatabase;
 
-        public AppointmentCacheRedis()
+        public AppointmentCacheRedis(ILogger<AppointmentCacheRedis> logger, string traceId, IConfiguration configuration) : base(logger, traceId)
         {
+            var config = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            string redisConnectionString = config["RedisConnectionString"] ?? throw new ConfigurationErrorsException("Configuration setting 'RedisConnectionString' not found.");
+            var redisConnection = ConnectionMultiplexer.Connect(redisConnectionString);
+            _redisDatabase = redisConnection.GetDatabase();
+        }
+/*        {
             var config = new ConfigurationBuilder()
                 .AddEnvironmentVariables()
                 .Build();
@@ -20,7 +27,7 @@ namespace Functions.Helpers
             var redisConnection = ConnectionMultiplexer.Connect(redisConnectionString);
             _redisDatabase = redisConnection.GetDatabase();
         }
-
+*/
         // Check if an appointment is new
         public override bool IsAppointmentNew(Appointment appointment)
         {
@@ -48,8 +55,8 @@ namespace Functions.Helpers
                 var appointmentsForDate = appointments.Where(a => a.Date.Date == date).ToList();
                 // Serialize the appointments
                 var serializedAppointments = JsonConvert.SerializeObject(appointmentsForDate);
-                // Store the appointments in Redis by location and date
-                _redisDatabase.StringSet(key, serializedAppointments);
+                // Store the appointments in Redis by location and date.  Expire the day after "date"
+                _redisDatabase.StringSet(key, serializedAppointments, expiry: date.AddDays(1) - DateTime.Now);
             }
         }
         // Get the appointments from the cache by location and date range

@@ -49,7 +49,8 @@ namespace Functions.Services
             stopwatch.Start();
             var stopwatchTotal = new Stopwatch();
             stopwatchTotal.Start();
-            var appointments = new List<Appointment>();
+            List<Appointment> appointments = new ();
+            List<Appointment> openAppointments = new ();
             try
             {
                 // Fetch appointment data from API
@@ -68,13 +69,13 @@ namespace Functions.Services
                 stopwatch.Restart();
 
                 // Filter appointments with openings
-                var openAppointments = appointments.Where(a => a.Openings > 0).ToList();
+                openAppointments = appointments.Where(a => a.Openings > 0).ToList();
                 stopwatch.Stop();
                 _logger.LogTrace($"[{_traceId}]Filtering appointments took: {stopwatch.ElapsedMilliseconds} ms to locate {openAppointments.Count} available appointments");
                 stopwatch.Restart();
 
                 // Check which appointments are new and have not been processed before
-                var appointmentsCache = AppointmentCacheFactory.CreateCacheClient(_configuration);
+                var appointmentsCache = AppointmentCacheFactory.CreateCacheClient(_configuration, (ILogger<AppointmentCacheBase>)_logger, _traceId);
                 openAppointments = openAppointments.Where(a => appointmentsCache.IsAppointmentNew(a)).ToList();
                 stopwatch.Stop();
                 _logger.LogTrace($"[{_traceId}]Checking cache for new appointments took: {stopwatch.ElapsedMilliseconds} ms");

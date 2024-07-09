@@ -3,6 +3,7 @@ using System.Data;
 using Functions.Models;
 using Microsoft.Extensions.Configuration;
 using System.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Functions.Helpers
 {
@@ -10,12 +11,9 @@ namespace Functions.Helpers
     {
         private readonly string _connectionString;
 
-        public AppointmentCacheSqlDatabase()
+        public AppointmentCacheSqlDatabase(ILogger<AppointmentCacheSqlDatabase> logger, string traceId, IConfiguration configuration) : base(logger, traceId)
         {
-            var config = new ConfigurationBuilder()
-                .AddEnvironmentVariables()
-                .Build();
-            
+            var config = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _connectionString = config["SqlConnectionString"] ?? throw new ConfigurationErrorsException("Configuration setting 'SqlConnectionString' not found.");
         }
 
