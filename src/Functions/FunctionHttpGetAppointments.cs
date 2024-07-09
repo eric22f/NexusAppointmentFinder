@@ -7,14 +7,14 @@ using Functions.Helpers;
 
 namespace Functions
 {
-    public class HttpGetAppointmentsFunction(ILogger<HttpGetAppointmentsFunction> logger, NexusAppointmentService appointmentsSvc,
+    public class FunctionHttpGetAppointments(ILogger<FunctionHttpGetAppointments> logger, NexusAppointmentService appointmentsSvc,
         Tracer tracer)
     {
-        private readonly ILogger<HttpGetAppointmentsFunction> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        private readonly ILogger<FunctionHttpGetAppointments> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         private readonly NexusAppointmentService _appointmentsSvc = appointmentsSvc ?? throw new ArgumentNullException(nameof(appointmentsSvc));
         private readonly Tracer _tracer = tracer ?? throw new ArgumentNullException(nameof(tracer));
 
-        [Function("HttpGetAppointmentsFunction")]
+        [Function("FunctionHttpGetAppointments")]
         public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
             FunctionContext context)
         {
