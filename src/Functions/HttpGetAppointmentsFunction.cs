@@ -15,9 +15,10 @@ namespace Functions
         private readonly Tracer _tracer = tracer ?? throw new ArgumentNullException(nameof(tracer));
 
         [Function("HttpGetAppointmentsFunction")]
-        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req)
+        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
+            FunctionContext context)
         {
-            _logger.LogInformation($"[{_tracer.Id}]HttpGetAppointmentsFunction requested.");
+            _logger.LogInformation($"[{_tracer.Id}]{context.FunctionDefinition.Name} requested with Invocation ID: {context.InvocationId}.");
             int result = await _appointmentsSvc.ProcessAppointments();
         
             return result == -1 ? new BadRequestObjectResult($"An error occurred processing appointments. (Reference trace log id: {_tracer.Id})") 
