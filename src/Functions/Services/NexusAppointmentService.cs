@@ -88,16 +88,32 @@ namespace Functions.Services
                 _logger.LogTrace($"[{_traceId}] Checking cache for new appointments took: {stopwatch.ElapsedMilliseconds} ms");
                 stopwatch.Restart();
 
-                // Send open appointments to Service Bus
-                var serviceBus = ServiceBusCreator.CreateServiceBusClient(_configuration);
-                var message = new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(openAppointments)));
-                await serviceBus.SendAsync(message);
-                stopwatch.Stop();
-                _logger.LogTrace($"[{_traceId}] Sending the new appointments to Service Bus took: {stopwatch.ElapsedMilliseconds} ms");
+                // Check if we should send open appointments to the service bus to trigger notifications
+                if (_configuration["SendAppointmentNotifications"] == "true")
+                {
+                    // Send open appointments to Service Bus
+                    var serviceBus = ServiceBusCreator.CreateServiceBusClient(_configuration);
+                    var message = new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(openAppointments)));
+                    await serviceBus.SendAsync(message);
+                    stopwatch.Stop();
+                    _logger.LogTrace($"[{_traceId}] Sending the new appointments to Service Bus took: {stopwatch.ElapsedMilliseconds} ms");
+                }
+                else
+                {
+                    _logger.LogInformation($"[{_traceId}] SendAppointmentNotifications is disabled. Not sending available appointments to Service Bus.");
+                }
 
-                // Cache the open appointments
-                stopwatch.Stop();
-                appointmentsCache.CacheAppointments(LocationId, _fromDate, _toDate, openAppointments);
+                // See if we should cache the open appointments
+                if (_configuration["CacheAvailableAppointmentSlots"] == "true")
+                {
+                    // Cache the open appointments
+                    stopwatch.Stop();
+                    appointmentsCache.CacheAppointments(LocationId, _fromDate, _toDate, openAppointments);
+                }
+                else
+                {
+                    _logger.LogInformation($"[{_traceId}] CacheAvailableAppointmentSlots is disabled. Not caching available appointments.");
+                }
 
                 IsProcessAppointmentsSuccess = true;
             }
