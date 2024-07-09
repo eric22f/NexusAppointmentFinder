@@ -15,7 +15,7 @@ namespace Functions.Helpers
                 .AddEnvironmentVariables()
                 .Build();
             
-            connectionString = "Server=tcp:svr-faust-sandbox-db.database.windows.net,1433;Initial Catalog=faust-sandbox;Persist Security Info=False;User ID=faust-admin;Password=w7cuHYEbsU2dVN4eNPNxQHb7t9uag6n;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+            connectionString = "Server=tcp:svr-faust-sandbox-db.database.windows.net,1433;Initial Catalog=faust-sandbox;Persist Security Info=False;User ID=;Password=;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
 
             _connectionString = string.IsNullOrWhiteSpace(connectionString) ? config["SqlConnectionString"] ?? string.Empty : connectionString;
         }
