@@ -15,7 +15,7 @@ namespace Functions.Helpers
             // Create new Redis cache client
             try
             {
-                var cache = new AppointmentCacheRedis(configuration["RedisConnectionString"] ?? throw new ArgumentNullException("RedisConnectionString is not set"));
+                var cache = new AppointmentCacheRedis();
                 return cache;
             }
             catch (Exception)
@@ -27,7 +27,7 @@ namespace Functions.Helpers
             try
             {
                 // Create new Database cache client
-                return new AppointmentCacheSqlDatabase(configuration["SqlConnectionString"] ?? throw new ArgumentNullException("SqlConnectionString is not set"));
+                return new AppointmentCacheSqlDatabase();
             }
             catch (Exception)
             {

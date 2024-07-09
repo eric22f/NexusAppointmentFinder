@@ -1,20 +1,24 @@
 using StackExchange.Redis;
 using Newtonsoft.Json;
 using Functions.Models;
+using Microsoft.Extensions.Configuration;
+using System.Configuration;
 
 namespace Functions.Helpers
 {
     // Cache processed appointments in Redis
     public class AppointmentCacheRedis : AppointmentCacheBase
     {
-        private readonly IDatabase redisDatabase;
-        private readonly string processedAppointmentsKey;
+        private readonly IDatabase _redisDatabase;
 
-        public AppointmentCacheRedis(string redisConnectionString, string processedAppointmentsKey = "ProcessedAppointments")
+        public AppointmentCacheRedis()
         {
+            var config = new ConfigurationBuilder()
+                .AddEnvironmentVariables()
+                .Build();
+            string redisConnectionString = config["RedisConnectionString"] ?? throw new ConfigurationErrorsException("Configuration setting 'RedisConnectionString' not found.");
             var redisConnection = ConnectionMultiplexer.Connect(redisConnectionString);
-            redisDatabase = redisConnection.GetDatabase();
-            this.processedAppointmentsKey = processedAppointmentsKey;
+            _redisDatabase = redisConnection.GetDatabase();
         }
 
         // Check if an appointment is new
@@ -22,7 +26,7 @@ namespace Functions.Helpers
         {
             var key = GenerateCacheKey(appointment);
             // Get appointments for the date
-            var redisValue = redisDatabase.StringGet(key);
+            var redisValue = _redisDatabase.StringGet(key);
             if (redisValue.IsNullOrEmpty)
             {
                 return true; // No appointments for the date
@@ -45,7 +49,7 @@ namespace Functions.Helpers
                 // Serialize the appointments
                 var serializedAppointments = JsonConvert.SerializeObject(appointmentsForDate);
                 // Store the appointments in Redis by location and date
-                redisDatabase.StringSet(key, serializedAppointments);
+                _redisDatabase.StringSet(key, serializedAppointments);
             }
         }
         // Get the appointments from the cache by location and date range
@@ -56,7 +60,7 @@ namespace Functions.Helpers
             {
                 var key = GenerateCacheKey(locationId, date);
                 // Get appointments for the date
-                var redisValue = redisDatabase.StringGet(key);
+                var redisValue = _redisDatabase.StringGet(key);
                 if (redisValue.IsNullOrEmpty)
                 {
                     continue;
