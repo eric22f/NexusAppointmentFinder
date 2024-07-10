@@ -86,12 +86,12 @@ namespace Functions.Helpers
             using (SqlConnection connection = new(_connectionString))
             {
                 // Clear out any existing appointments for the location by date range
-                bool includeStartDate = startDate <= DateTime.Now.AddDays(1);
+                bool includeStartDate = startDate.AddDays(-1) > DateTime.Today;
                 string query = "DELETE FROM NexusAppointmentsAvailability"
+                            + " WHERE LocationId = @LocationId"
                             + (includeStartDate ? " AND AppointmentDate >= @StartDate" : "")
-                            + " AND AppointmentDate <= @EndDate"
-                            + " WHERE LocationId = @LocationId";
-                SqlCommand command = new SqlCommand(query, connection);
+                            + " AND AppointmentDate <= @EndDate";
+                SqlCommand command = new (query, connection);
                 command.Parameters.AddWithValue("@LocationId", locationId);
                 if (includeStartDate)
                 {
@@ -106,19 +106,21 @@ namespace Functions.Helpers
         // Insert the appointment into the database
         private void InsertAppointments(List<Appointment> appointments)
         {
-            using (var copy = new SqlBulkCopy(_connectionString))
+            if (appointments.Count == 0)
             {
-                copy.DestinationTableName = "NexusAppointmentsAvailability";
-/*                copy.ColumnMappings.Add(nameof(Appointment.Date), "AppointmentDate");
-                copy.ColumnMappings.Add(nameof(Appointment.LocationId), "LocationId");
-                copy.ColumnMappings.Add(nameof(Appointment.Openings), "Openings");
-                copy.ColumnMappings.Add(nameof(Appointment.TotalSlots), "TotalSlots");
-                copy.ColumnMappings.Add(nameof(Appointment.Pending), "Pending");
-                copy.ColumnMappings.Add(nameof(Appointment.Conflicts), "Conflicts");
-                copy.ColumnMappings.Add(nameof(Appointment.Duration), "Duration");
-*/                
-                copy.WriteToServer(ToDataTable(appointments));
+                return;
             }
+            using var copy = new SqlBulkCopy(_connectionString);
+            copy.DestinationTableName = "NexusAppointmentsAvailability";
+            /*                copy.ColumnMappings.Add(nameof(Appointment.Date), "AppointmentDate");
+                            copy.ColumnMappings.Add(nameof(Appointment.LocationId), "LocationId");
+                            copy.ColumnMappings.Add(nameof(Appointment.Openings), "Openings");
+                            copy.ColumnMappings.Add(nameof(Appointment.TotalSlots), "TotalSlots");
+                            copy.ColumnMappings.Add(nameof(Appointment.Pending), "Pending");
+                            copy.ColumnMappings.Add(nameof(Appointment.Conflicts), "Conflicts");
+                            copy.ColumnMappings.Add(nameof(Appointment.Duration), "Duration");
+            */
+            copy.WriteToServer(ToDataTable(appointments));
         }
         
         private DataTable ToDataTable(List<Appointment> appointments)
