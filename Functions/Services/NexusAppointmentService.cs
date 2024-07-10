@@ -90,18 +90,25 @@ namespace Functions.Services
                 stopwatch.Restart();
 
                 // Check if we should send open appointments to the service bus to trigger notifications
-                if (_configuration["SendAppointmentNotifications"] == "true")
+                if (openAppointments.Count > 0)
                 {
-                    // Send open appointments to Service Bus
-                    var serviceBus = ServiceBusCreator.CreateServiceBusClient(_configuration);
-                    var message = new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(openAppointments)));
-                    await serviceBus.SendAsync(message);
-                    stopwatch.Stop();
-                    _logger.LogTrace($"[{_traceId}] Sending the new appointments to Service Bus took: {stopwatch.ElapsedMilliseconds} ms");
+                    if (_configuration["ServiceBus:Enabled"] == "true")
+                    {
+                        // Send open appointments to Service Bus
+                        var serviceBus = ServiceBusCreator.CreateServiceBusClient(_configuration);
+                        var message = new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(openAppointments)));
+                        await serviceBus.SendAsync(message);
+                        stopwatch.Stop();
+                        _logger.LogTrace($"[{_traceId}] Sending the new appointments to Service Bus took: {stopwatch.ElapsedMilliseconds} ms");
+                    }
+                    else
+                    {
+                        _logger.LogInformation($"[{_traceId}] ServiceBus is disabled. Not sending new available appointments.");
+                    }
                 }
                 else
                 {
-                    _logger.LogInformation($"[{_traceId}] SendAppointmentNotifications is disabled. Not sending available appointments to Service Bus.");
+                    _logger.LogInformation($"[{_traceId}] No new appointments found.");
                 }
 
                 // See if we should cache the open appointments

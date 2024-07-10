@@ -10,9 +10,9 @@ namespace Functions.Helpers
             if (string.IsNullOrWhiteSpace(connectionString) || string.IsNullOrWhiteSpace(queueName))
             {
                 connectionString = string.IsNullOrWhiteSpace(connectionString) ?
-                    configuration["ServiceBusConnectionString"] ?? "ServiceBusConnectionString - not found" : connectionString;
+                    configuration["ServiceBus:ServiceBusConnectionString"] ?? "ServiceBus:ServiceBusConnectionString - not found" : connectionString;
                 queueName = string.IsNullOrWhiteSpace(queueName) ?
-                    configuration["QueueName"] ?? "QueueName - not found" : queueName;
+                    configuration["ServiceBus:QueueName"] ?? "ServiceBus:QueueName - not found" : queueName;
             }
 
             return new QueueClient(connectionString, queueName);
