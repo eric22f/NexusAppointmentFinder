@@ -1,7 +1,7 @@
-using Functions.Models;
+using NexusAzureFunctions.Models;
 using Microsoft.Extensions.Logging;
 
-namespace Functions.Helpers
+namespace NexusAzureFunctions.Helpers
 {
     // This class is used to cache appointments in order to prevent duplicate processing
     public abstract class AppointmentCacheBase

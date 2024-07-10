@@ -1,11 +1,11 @@
 using System.Data.SqlClient;
 using System.Data;
-using Functions.Models;
+using NexusAzureFunctions.Models;
 using Microsoft.Extensions.Configuration;
 using System.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace Functions.Helpers
+namespace NexusAzureFunctions.Helpers
 {
     public class AppointmentCacheSqlDatabase : AppointmentCacheBase
     {

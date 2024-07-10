@@ -1,11 +1,11 @@
 using StackExchange.Redis;
 using Newtonsoft.Json;
-using Functions.Models;
+using NexusAzureFunctions.Models;
 using Microsoft.Extensions.Configuration;
 using System.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace Functions.Helpers
+namespace NexusAzureFunctions.Helpers
 {
     // Cache processed appointments in Redis
     public class AppointmentCacheRedis : AppointmentCacheBase

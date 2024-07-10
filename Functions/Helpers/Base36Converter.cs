@@ -1,7 +1,7 @@
 using System;
 using System.Text;
 
-namespace Functions.Helpers
+namespace NexusAzureFunctions.Helpers
 {
     public static class Base36Converter
     {

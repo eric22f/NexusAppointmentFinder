@@ -1,13 +1,13 @@
 using Microsoft.Azure.ServiceBus;
-using Functions.Helpers;
+using NexusAzureFunctions.Helpers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using Newtonsoft.Json;
 using System.Diagnostics;
-using Functions.Models;
+using NexusAzureFunctions.Models;
 
-namespace Functions.Services
+namespace NexusAzureFunctions.Services
 {
     // This is the Primary class used to process appointments from the Nexus Appointments API
     // and submit open appointments to the service bus

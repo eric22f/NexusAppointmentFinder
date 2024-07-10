@@ -1,8 +1,8 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Functions.Models;
+using NexusAzureFunctions.Models;
 
-namespace Functions.Helpers
+namespace NexusAzureFunctions.Helpers
 {
     // Convert Nexus appointments Json results to Appointment model
     public class AppointmentConverter : JsonConverter<Appointment>

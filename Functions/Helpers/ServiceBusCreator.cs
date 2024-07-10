@@ -1,7 +1,7 @@
 using Microsoft.Azure.ServiceBus;
 using Microsoft.Extensions.Configuration;
 
-namespace Functions.Helpers
+namespace NexusAzureFunctions.Helpers
 {
     public static class ServiceBusCreator
     {

@@ -1,8 +1,8 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Functions.Services;
-using Functions.Helpers;
+using NexusAzureFunctions.Services;
+using NexusAzureFunctions.Helpers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;

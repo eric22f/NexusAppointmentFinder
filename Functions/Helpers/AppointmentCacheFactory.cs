@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace Functions.Helpers
+namespace NexusAzureFunctions.Helpers
 {
     // This static class is used to create a cache client by first connecting to Redis
     // If Redis is not available then to a database

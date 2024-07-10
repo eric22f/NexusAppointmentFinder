@@ -2,10 +2,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
-using Functions.Services;
-using Functions.Helpers;
+using NexusAzureFunctions.Services;
+using NexusAzureFunctions.Helpers;
 
-namespace Functions
+namespace NexusAzureFunctions
 {
     public class FunctionHttpGetAppointments(ILogger<FunctionHttpGetAppointments> logger, NexusAppointmentService appointmentsSvc,
         Tracer tracer)

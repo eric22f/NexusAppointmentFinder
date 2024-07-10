@@ -1,7 +1,7 @@
 
 using System.Text;
 
-namespace Functions.Helpers
+namespace NexusAzureFunctions.Helpers
 {
     // Genereates a unique Id for logging
     public class Tracer

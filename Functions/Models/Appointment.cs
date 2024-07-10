@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Functions.Models
+namespace NexusAzureFunctions.Models
 {
     // Nexus Appointment result
     [DebuggerDisplay("Appointment: {ToString()}")]
