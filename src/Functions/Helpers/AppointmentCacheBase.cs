@@ -13,12 +13,12 @@ namespace Functions.Helpers
         // Group appointments by date
         protected static Dictionary<DateTime, List<Appointment>> GetAppointmentsByDate(List<Appointment> appointments)
         {
-            Dictionary<DateTime, List<Appointment>> appointmentsByDate = new();
+            Dictionary<DateTime, List<Appointment>> appointmentsByDate = [];
             foreach (Appointment appointment in appointments)
             {
                 if (!appointmentsByDate.ContainsKey(appointment.Date))
                 {
-                    appointmentsByDate[appointment.Date] = new List<Appointment>();
+                    appointmentsByDate[appointment.Date] = [];
                 }
                 appointmentsByDate[appointment.Date].Add(appointment);
             }

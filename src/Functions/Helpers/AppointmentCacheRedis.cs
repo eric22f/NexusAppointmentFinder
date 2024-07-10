@@ -75,7 +75,7 @@ namespace Functions.Helpers
                     continue;
                 }
                 string serializedAppointments = redisValue.ToString();
-                var appointmentsForDate = JsonConvert.DeserializeObject<List<Appointment>>(serializedAppointments) ?? new List<Appointment>();
+                var appointmentsForDate = JsonConvert.DeserializeObject<List<Appointment>>(serializedAppointments) ?? [];
                 appointments.AddRange(appointmentsForDate);
             }
             return appointments;

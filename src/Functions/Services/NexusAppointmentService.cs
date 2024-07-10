@@ -57,8 +57,8 @@ namespace Functions.Services
             stopwatch.Start();
             var stopwatchTotal = new Stopwatch();
             stopwatchTotal.Start();
-            List<Appointment> appointments = new();
-            List<Appointment> openAppointments = new();
+            List<Appointment> appointments = [];
+            List<Appointment> openAppointments = [];
             try
             {
                 // Fetch appointment data from API

@@ -12,7 +12,7 @@ namespace Functions.Helpers
         public List<Appointment> ConvertFromJson(string json, int locationId)
         {
             LocationId = locationId;
-            return JsonConvert.DeserializeObject<List<Appointment>>(json, this) ?? new List<Appointment>();
+            return JsonConvert.DeserializeObject<List<Appointment>>(json, this) ?? [];
         }
 
         public override Appointment ReadJson(JsonReader reader, Type objectType, Appointment? existingValue, bool hasExistingValue, JsonSerializer serializer)
