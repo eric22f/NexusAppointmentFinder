@@ -15,10 +15,10 @@ public class NexusAppointmentService
 {
     private readonly IConfiguration _configuration;
     private readonly string _nexusAppointmentsApiUrl;
-    private const int LocationId = 5020;
-    private const int TotalDays = 7;
-    private readonly DateTime _fromDate = DateTime.Today.AddDays(1);
-    private readonly DateTime _toDate = DateTime.Today.AddDays(TotalDays + 1);
+    private readonly int _locationId;
+    private readonly int _totalDays;
+    private readonly DateTime _fromDate;
+    private readonly DateTime _toDate;
     private readonly ILogger<NexusAppointmentService> _logger;
     private readonly string _traceId;
     private readonly AppointmentCacheFactory _appointmentCacheFactory;
@@ -33,9 +33,21 @@ public class NexusAppointmentService
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-        _traceId = tracer.Id ?? throw new ArgumentNullException(nameof(tracer));
+        _traceId = tracer?.Id ?? throw new ArgumentNullException(nameof(tracer));
         _appointmentCacheFactory = appointmentCacheFactory ?? throw new ArgumentNullException(nameof(appointmentCacheFactory));
 
+        _locationId = _configuration.GetValue<int>("NexusApi:LocationId");
+        if (_locationId < 1)
+        {
+            throw new ArgumentException("NexusAPI Location ID is required to process appointments.");
+        }
+        _totalDays = _configuration.GetValue<int>("NexusApi:TotalDays");
+        if (_totalDays < 1)
+        {
+            _totalDays = 7;
+        }
+        _fromDate = DateTime.Today.AddDays(1);
+        _toDate = DateTime.Today.AddDays(_totalDays + 1);
         _nexusAppointmentsApiUrl = _configuration["NexusApi:BaseUrl"] + _configuration["NexusApi:QueryParams"]
             ?? "https://ttp.cbp.dhs.gov/schedulerapi/locations/[LOCATION_ID]/slots?startTimestamp=[START_DATE]&endTimestamp=[END_DATE]";
         _logger.LogInformation("[{_traceId}] NexusAppointmentService initialized");
@@ -52,7 +64,7 @@ public class NexusAppointmentService
     public async Task<List<Appointment>> ProcessAppointments()
     {
         IsProcessAppointmentsSuccess = false;
-        _logger.LogInformation($"[{_traceId}] ProcessAppointments started - Location ID: {LocationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
+        _logger.LogInformation($"[{_traceId}] ProcessAppointments started - Location ID: {_locationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
         var stopwatch = Stopwatch.StartNew();
         var stopwatchTotal = Stopwatch.StartNew();
         List<Appointment> appointments = [];
@@ -102,11 +114,12 @@ public class NexusAppointmentService
         finally
         {
             stopwatchTotal.Stop();
-            _logger.LogInformation($"[{_traceId}] ProcessAppointments took: {stopwatchTotal.ElapsedMilliseconds} ms to process {appointments.Count} appointments and found {openAppointments.Count} available appointments for location ID: {LocationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
+            _logger.LogInformation($"[{_traceId}] ProcessAppointments took: {stopwatchTotal.ElapsedMilliseconds} ms to process {appointments.Count} appointments and found {openAppointments.Count} available appointments for location ID: {_locationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
         }
         return openAppointments;
     }
 
+#region Private Methods
     // Fetch appointment data from Nexus Appointments API
     private async Task<string> PullAppointmentDataFromNexusApi(Stopwatch stopwatch)
     {
@@ -122,7 +135,7 @@ public class NexusAppointmentService
     // Get the URL for the Nexus Appointments API based on Location and start and end dates
     private string GetNexusAppointmentsApiUrl()
     {
-        return _nexusAppointmentsApiUrl.Replace("[LOCATION_ID]", LocationId.ToString())
+        return _nexusAppointmentsApiUrl.Replace("[LOCATION_ID]", _locationId.ToString())
             .Replace("[START_DATE]", _fromDate.ToString("yyyy-MM-ddT00:00:00"))
             .Replace("[END_DATE]", _toDate.ToString("yyyy-MM-ddT00:00:00"));
     }
@@ -133,7 +146,7 @@ public class NexusAppointmentService
     {
         List<Appointment> appointments;
         var appointmentConverter = new AppointmentConverter();
-        appointments = appointmentConverter.ConvertFromJson(appointmentData, LocationId);
+        appointments = appointmentConverter.ConvertFromJson(appointmentData, _locationId);
         stopwatch.Stop();
         _logger.LogTrace($"[{_traceId}] Converting JSON data took: {stopwatch.ElapsedMilliseconds} ms to process {appointments.Count} appointments");
         stopwatch.Restart();
@@ -195,7 +208,8 @@ public class NexusAppointmentService
         {
             // Cache the open appointments
             stopwatch.Stop();
-            appointmentsCache.CacheAppointments(LocationId, _fromDate, _toDate, openAppointments);
+            appointmentsCache.CacheAppointments(_locationId, _fromDate, _toDate, openAppointments);
         }
     }
+#endregion
 }
