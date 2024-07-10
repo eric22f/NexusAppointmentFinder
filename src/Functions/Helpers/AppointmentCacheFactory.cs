@@ -18,8 +18,11 @@ namespace Functions.Helpers
             // Create new Redis cache client
             try
             {
-                var cache = new AppointmentCacheRedis(_loggerFactory.CreateLogger<AppointmentCacheRedis>(), _traceId, _config);
-                return cache;
+                if (_config["RedisCache:Enabled"] == "true")
+                {
+                    var cache = new AppointmentCacheRedis(_loggerFactory.CreateLogger<AppointmentCacheRedis>(), _traceId, _config);
+                    return cache;
+                }
             }
             catch (Exception e)
             {

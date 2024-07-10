@@ -20,7 +20,7 @@ namespace Functions.Helpers
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _traceId = traceId ?? throw new ArgumentNullException(nameof(traceId));
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            string redisConnectionString = config["RedisConnectionString"] ?? throw new ConfigurationErrorsException("Configuration setting 'RedisConnectionString' not found.");
+            string redisConnectionString = config["RedisCache:RedisConnectionString"] ?? throw new ConfigurationErrorsException("Configuration setting 'RedisCache:RedisConnectionString' not found.");
             var redisConnection = ConnectionMultiplexer.Connect(redisConnectionString);
             _redisDatabase = redisConnection.GetDatabase();
             // Check if the Redis database connection is valid
