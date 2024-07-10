@@ -36,7 +36,7 @@ public class NexusAppointmentService
         _traceId = tracer.Id ?? throw new ArgumentNullException(nameof(tracer));
         _appointmentCacheFactory = appointmentCacheFactory ?? throw new ArgumentNullException(nameof(appointmentCacheFactory));
 
-        _nexusAppointmentsApiUrl = _configuration["NexusAppointmentsApiUrl"] 
+        _nexusAppointmentsApiUrl = _configuration["NexusApi:BaseUrl"] + _configuration["NexusApi:QueryParams"]
             ?? "https://ttp.cbp.dhs.gov/schedulerapi/locations/[LOCATION_ID]/slots?startTimestamp=[START_DATE]&endTimestamp=[END_DATE]";
         _logger.LogInformation("[{_traceId}] NexusAppointmentService initialized");
         _logger.LogInformation($"[{_traceId}] NexusAppointmentsApiUrl: {_nexusAppointmentsApiUrl}");
@@ -82,12 +82,27 @@ public class NexusAppointmentService
             _logger.LogTrace($"[{_traceId}] Filtering appointments took: {stopwatch.ElapsedMilliseconds} ms to locate {openAppointments.Count} available appointments");
             stopwatch.Restart();
 
-            // Check which appointments are new and have not been processed before
+            // Check if there are any open appointments
+            if (openAppointments.Count == 0)
+            {
+                _logger.LogInformation($"[{_traceId}] No available appointments found.");
+                IsProcessAppointmentsSuccess = true;
+                return openAppointments;
+            }
+
+            // Check which appointments are new and have not been processed before            
             var appointmentsCache = _appointmentCacheFactory.CreateCacheClient();
-            openAppointments = openAppointments.Where(a => appointmentsCache.IsAppointmentNew(a)).ToList();
-            stopwatch.Stop();
-            _logger.LogTrace($"[{_traceId}] Checking cache for new appointments took: {stopwatch.ElapsedMilliseconds} ms");
-            stopwatch.Restart();
+            if (appointmentsCache != null)
+            {
+                openAppointments = openAppointments.Where(a => appointmentsCache.IsAppointmentNew(a)).ToList();
+                stopwatch.Stop();
+                _logger.LogTrace($"[{_traceId}] Checking cache for new appointments took: {stopwatch.ElapsedMilliseconds} ms");
+                stopwatch.Restart();
+            }
+            else
+            {
+                _logger.LogWarning($"[{_traceId}] Cache client is not available. Not checking appointments if appointments are new.");
+            }
 
             // Check if we should send open appointments to the service bus to trigger notifications
             if (openAppointments.Count > 0)
@@ -112,15 +127,11 @@ public class NexusAppointmentService
             }
 
             // See if we should cache the open appointments
-            if (_configuration["CacheAvailableAppointmentSlots"] == "true")
+            if (appointmentsCache != null)
             {
                 // Cache the open appointments
                 stopwatch.Stop();
                 appointmentsCache.CacheAppointments(LocationId, _fromDate, _toDate, openAppointments);
-            }
-            else
-            {
-                _logger.LogInformation($"[{_traceId}] CacheAvailableAppointmentSlots is disabled. Not caching available appointments.");
             }
 
             IsProcessAppointmentsSuccess = true;

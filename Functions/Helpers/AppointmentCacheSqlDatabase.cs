@@ -14,7 +14,7 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
     public AppointmentCacheSqlDatabase(ILogger<AppointmentCacheSqlDatabase> logger, string traceId, IConfiguration configuration)
     {
         var config = configuration ?? throw new ArgumentNullException(nameof(configuration));
-        _connectionString = config["SqlConnectionString"] ?? throw new ConfigurationErrorsException("Configuration setting 'SqlConnectionString' not found.");
+        _connectionString = config["SqlDatabase:SqlConnectionString"] ?? throw new ConfigurationErrorsException("Configuration setting 'SqlDatabase:SqlConnectionString' not found.");
     }
 
     // Add the appointment to the database
