@@ -43,10 +43,11 @@ namespace Functions.Services
         }
 
         // This method fetches appointment data from the Nexus Appointments API
-        // converts to a list of Appointment objects 
-        // checks for new openings
-        // then submits the new open appointments to the service bus
-        // and caches the new appointments
+        // converts the data to a list of Appointment objects 
+        // checks for available openings
+        // filter down to which ones are new and have not been cached
+        // submits the new open appointments to a service bus
+        // cache the new appointments to prevent duplicate submissions
         // Returns all available appointments and sets IsProcessAppointmentsSuccess to true if successful
         public async Task<List<Appointment>> ProcessAppointments()
         {
