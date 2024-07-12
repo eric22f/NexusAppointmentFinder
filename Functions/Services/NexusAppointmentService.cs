@@ -47,7 +47,7 @@ public class NexusAppointmentService
             _totalDays = 7;
         }
         _fromDate = DateTime.Today.AddDays(1);
-        _toDate = DateTime.Today.AddDays(_totalDays + 1);
+        _toDate = _fromDate.AddDays(_totalDays);
         _nexusAppointmentsApiUrl = _configuration["NexusApi:BaseUrl"] + _configuration["NexusApi:QueryParams"]
             ?? "https://ttp.cbp.dhs.gov/schedulerapi/locations/[LOCATION_ID]/slots?startTimestamp=[START_DATE]&endTimestamp=[END_DATE]";
         _logger.LogInformation("[{_traceId}] NexusAppointmentService initialized");
