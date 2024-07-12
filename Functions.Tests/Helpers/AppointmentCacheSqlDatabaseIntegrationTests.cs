@@ -3,16 +3,15 @@ using System.Data;
 using System.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic;
-using Moq;
 using NexusAzureFunctions.Helpers;
 using NexusAzureFunctions.Models;
-using Xunit;
+using Xunit.Abstractions;
 
-namespace NexusAzureFunctions.Tests.Helpers;
+namespace NexusAppointmentService.Tests.Helpers;
 
 public class AppointmentCacheSqlDatabaseIntegrationTests
 {
+    private readonly ITestOutputHelper _output;
     private readonly ILogger<AppointmentCacheSqlDatabase> _logger;
     private readonly IConfiguration _config;
     private readonly string _connectionString;
@@ -21,8 +20,10 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
     private readonly int _locationId = 1234;
     private const int MaxScenerioId = 7;
 
-    public AppointmentCacheSqlDatabaseIntegrationTests()
+    public AppointmentCacheSqlDatabaseIntegrationTests(ITestOutputHelper output)
     {
+        _output = output;
+
         var configurationBuilder = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true);
@@ -31,7 +32,7 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
         var loggerFactory = LoggerFactory.Create(builder =>
         {
             builder.AddConfiguration(_config.GetSection("Logging"))
-                    .AddConsole();
+                .AddConsole();
         });
         _logger = loggerFactory.CreateLogger<AppointmentCacheSqlDatabase>();
 
@@ -48,12 +49,12 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
     [Fact]
     public void SqlCache_CacheAppointments_SavesExpectedAppointments()
     {
-        _logger.LogInformation("Running SqlCache_CacheAppointments_SavesExpectedAppointments");
-        _logger.LogInformation($"Total Scenerios: {MaxScenerioId + 1}");
+        _output.WriteLine("Running Test SqlCache_CacheAppointments_SavesExpectedAppointments");
+        _output.WriteLine($"Total Scenerios: {MaxScenerioId + 1}");
         // Go through each Scenerio
         for (int scenerioId = 0; scenerioId <= MaxScenerioId; scenerioId++)
         {
-            _logger.LogInformation($"Scenerio: {scenerioId}");
+            _output.WriteLine($"Scenerio: {scenerioId}");
             // Arrange
             var cache = CreateAppointmentCache();
             var appointments = CreateAppointmentsList(scenerioId);
@@ -74,7 +75,7 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
                 Assert.Equal(appointments[i].Conflicts, cachedAppointments[i].Conflicts);
                 Assert.Equal(appointments[i].Duration, cachedAppointments[i].Duration);
             }
-            _logger.LogInformation($"Scenerio: {scenerioId} - Passed");
+            _output.WriteLine($"Scenerio: {scenerioId} - Passed");
         }
 
         // Clean up
