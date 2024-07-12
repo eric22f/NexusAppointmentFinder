@@ -3,6 +3,7 @@ using System.Data;
 using System.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 using Moq;
 using NexusAzureFunctions.Helpers;
 using NexusAzureFunctions.Models;
@@ -14,6 +15,7 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
 {
     private readonly ILogger<AppointmentCacheSqlDatabase> _logger;
     private readonly IConfiguration _config;
+    private readonly string _connectionString;
     private readonly DateTime _startDate;
     private readonly DateTime _endDate;
     private readonly int _locationId = 1234;
@@ -33,6 +35,7 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
         });
         _logger = loggerFactory.CreateLogger<AppointmentCacheSqlDatabase>();
 
+        _connectionString = _config["SqlDatabase:SqlConnectionString"] ?? throw new ConfigurationErrorsException("Configuration setting 'SqlDatabase:SqlConnectionString' not found.");
         int totalDays = _config.GetValue<int>("NexusApi:TotalDays");
         if (totalDays < 1)
         {
@@ -60,7 +63,7 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
 
             // Assert
             var cachedAppointments = cache.GetCachedAppointments(_locationId, _startDate, _endDate);
-            Assert.Equal(appointments.Count, cachedAppointments.Count);
+            Assert.True(appointments.Count == cachedAppointments.Count, $"Scenerio: {scenerioId} - Count mismatch");
             for (int i = 0; i < appointments.Count; i++)
             {
                 Assert.Equal(appointments[i].Date, cachedAppointments[i].Date);
@@ -73,6 +76,9 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
             }
             _logger.LogInformation($"Scenerio: {scenerioId} - Passed");
         }
+
+        // Clean up
+        ClearCache();
     }
 
 
@@ -86,7 +92,8 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
     private List<Appointment> CreateAppointmentsList(int scenerioId)
     {
         var result = new List<Appointment>();
-        var startDateTime = _startDate.AddHours(8);
+        var firstAppointmentDateTime = _startDate.AddHours(8);
+        var lastAppointmentDateTime = _endDate.AddDays(-1).AddHours(17);
 
         switch (scenerioId)
         {
@@ -95,28 +102,28 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
                 break;
             case 1:
                 // One appointment on the first day
-                result.Add(new Appointment { Date = startDateTime, LocationId = _locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
+                result.Add(new Appointment { Date = firstAppointmentDateTime, LocationId = _locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
                 break;
             case 2:
                 // One appointment on the 5th day
-                result.Add(new Appointment { Date = startDateTime.AddDays(5), LocationId = _locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
+                result.Add(new Appointment { Date = firstAppointmentDateTime.AddDays(5), LocationId = _locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
                 break;
             case 3:
                 // One appointment on the last day
-                result.Add(new Appointment { Date = _endDate.AddHours(17), LocationId = _locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
+                result.Add(new Appointment { Date = lastAppointmentDateTime, LocationId = _locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
                 break;
             case 4:
                 // Multiple appointments
-                result.Add(new Appointment { Date = startDateTime, LocationId = _locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
-                result.Add(new Appointment { Date = startDateTime.AddDays(1), LocationId = _locationId, Openings = 2, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
-                result.Add(new Appointment { Date = startDateTime.AddDays(2), LocationId = _locationId, Openings = 3, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
-                result.Add(new Appointment { Date = _endDate.AddHours(12), LocationId = _locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
+                result.Add(new Appointment { Date = firstAppointmentDateTime, LocationId = _locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
+                result.Add(new Appointment { Date = firstAppointmentDateTime.AddDays(1), LocationId = _locationId, Openings = 2, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
+                result.Add(new Appointment { Date = firstAppointmentDateTime.AddDays(2), LocationId = _locationId, Openings = 3, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
+                result.Add(new Appointment { Date = lastAppointmentDateTime, LocationId = _locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
                 break;
             case 5:
                 // A single appointment every day
                 for (int i = 0; i < _endDate.Subtract(_startDate).Days; i++)
                 {
-                    result.Add(new Appointment { Date = startDateTime.AddDays(i), LocationId = _locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
+                    result.Add(new Appointment { Date = firstAppointmentDateTime.AddDays(i), LocationId = _locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
                 }
                 break;
             case 6:
@@ -125,7 +132,7 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
                 {
                     if (i % 2 == 0)
                     {
-                        result.Add(new Appointment { Date = startDateTime.AddDays(i), LocationId = _locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
+                        result.Add(new Appointment { Date = firstAppointmentDateTime.AddDays(i), LocationId = _locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
                     }
                 }
                 break;
@@ -133,11 +140,11 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
                 // Every day has a consecutive appointment every 10 minutes with an opening starting 8 am to 6 pm
                 for (int i = 0; i < _endDate.Subtract(_startDate).Days; i++)
                 {
-                    startDateTime = startDateTime.AddDays(i).AddHours(8);
-                    while (startDateTime.Hour < 18)
+                    var appointmentDateTime = firstAppointmentDateTime.AddDays(i);
+                    while (appointmentDateTime.Hour < 18)
                     {
-                        result.Add(new Appointment { Date = startDateTime, LocationId = _locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
-                        startDateTime = startDateTime.AddMinutes(10);
+                        result.Add(new Appointment { Date = appointmentDateTime, LocationId = _locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
+                        appointmentDateTime = appointmentDateTime.AddMinutes(10);
                     }
                 }
                 break;
@@ -150,21 +157,14 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
 
     private void ClearCache()
     {
-        using var connection = new SqlConnection(_config.GetConnectionString("SqlConnectionString"));
+        using var connection = new SqlConnection(_connectionString);
         connection.Open();
         using var command = connection.CreateCommand();
-        command.CommandText = "DELETE FROM Appointments";
+        command.CommandText = "DELETE FROM NexusAppointmentsAvailability";
         command.CommandType = CommandType.Text;
         command.ExecuteNonQuery();
-    }
-
-    private void SeedCache()
-    {
-        using var connection = new SqlConnection(_config.GetConnectionString("SqlConnectionString"));
-        connection.Open();
-        using var command = connection.CreateCommand();
-        command.CommandText = "INSERT INTO Appointments (Id, StartTime, EndTime, Title, Description) VALUES ('1', '2021-01-01 00:00:00', '2021-01-01 01:00:00', 'Test', 'Test')";
-        command.CommandType = CommandType.Text;
+        // Reset the identity seed
+        command.CommandText = "DBCC CHECKIDENT ('NexusAppointmentsAvailability', RESEED, 0)";
         command.ExecuteNonQuery();
     }
 

@@ -47,11 +47,11 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
                 {
                     Date = reader.GetDateTime(1),
                     LocationId = reader.GetInt32(2),
-                    Openings = reader.GetInt32(3),
-                    TotalSlots = reader.GetInt32(4),
-                    Pending = reader.GetInt32(5),
-                    Conflicts = reader.GetInt32(6),
-                    Duration = reader.GetInt32(7)
+                    Openings = reader.GetInt16(3),
+                    TotalSlots = reader.GetInt16(4),
+                    Pending = reader.GetInt16(5),
+                    Conflicts = reader.GetInt16(6),
+                    Duration = reader.GetInt16(7)
                 };
                 // Add the appointment to the cache
                 appointments.Add(appointment);
@@ -106,28 +106,30 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
         }
         using var copy = new SqlBulkCopy(_connectionString);
         copy.DestinationTableName = "NexusAppointmentsAvailability";
-        /*                copy.ColumnMappings.Add(nameof(Appointment.Date), "AppointmentDate");
-                        copy.ColumnMappings.Add(nameof(Appointment.LocationId), "LocationId");
-                        copy.ColumnMappings.Add(nameof(Appointment.Openings), "Openings");
-                        copy.ColumnMappings.Add(nameof(Appointment.TotalSlots), "TotalSlots");
-                        copy.ColumnMappings.Add(nameof(Appointment.Pending), "Pending");
-                        copy.ColumnMappings.Add(nameof(Appointment.Conflicts), "Conflicts");
-                        copy.ColumnMappings.Add(nameof(Appointment.Duration), "Duration");
-        */
+
+        // Ensure that the column mappings match the DataTable and the SQL table schema
+        copy.ColumnMappings.Add("AppointmentDate", "AppointmentDate");
+        copy.ColumnMappings.Add("LocationId", "LocationId");
+        copy.ColumnMappings.Add("Openings", "Openings");
+        copy.ColumnMappings.Add("TotalSlots", "TotalSlots");
+        copy.ColumnMappings.Add("Pending", "Pending");
+        copy.ColumnMappings.Add("Conflicts", "Conflicts");
+        copy.ColumnMappings.Add("Duration", "Duration");
+        
         copy.WriteToServer(ToDataTable(appointments));
     }
     
-    private DataTable ToDataTable(List<Appointment> appointments)
+    private static DataTable ToDataTable(List<Appointment> appointments)
     {
         DataTable dataTable = new();
         // Add columns to the DataTable
         dataTable.Columns.Add("AppointmentDate", typeof(DateTime));
         dataTable.Columns.Add("LocationId", typeof(int));
-        dataTable.Columns.Add("Openings", typeof(int));
-        dataTable.Columns.Add("TotalSlots", typeof(int));
-        dataTable.Columns.Add("Pending", typeof(bool));
-        dataTable.Columns.Add("Conflicts", typeof(int));
-        dataTable.Columns.Add("Duration", typeof(int));
+        dataTable.Columns.Add("Openings", typeof(short));
+        dataTable.Columns.Add("TotalSlots", typeof(short));
+        dataTable.Columns.Add("Pending", typeof(short));
+        dataTable.Columns.Add("Conflicts", typeof(short));
+        dataTable.Columns.Add("Duration", typeof(short));
     
         // Add rows to the DataTable
         foreach (var appointment in appointments)
