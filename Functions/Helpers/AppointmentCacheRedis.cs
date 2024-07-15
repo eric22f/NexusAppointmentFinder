@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace NexusAzureFunctions.Helpers;
 
 // Cache processed appointments in Redis
+// Appointments are stored by location and date
 public class AppointmentCacheRedis : AppointmentCacheBase
 {
     private readonly ILogger<AppointmentCacheRedis> _logger;
@@ -28,22 +29,6 @@ public class AppointmentCacheRedis : AppointmentCacheBase
         {
             throw new Exception("Failed to establish connection to Redis database.");
         }
-        }
-
-    // Check if an appointment is new
-    public override bool IsAppointmentNew(Appointment appointment)
-    {
-        var key = GenerateCacheKey(appointment);
-        // Get appointments for the date
-        var redisValue = _redisDatabase.StringGet(key);
-        if (redisValue.IsNullOrEmpty)
-        {
-            return true; // No appointments for the date
-        }
-        string serializedAppointments = redisValue.ToString();
-        var appointmentsForDate = JsonConvert.DeserializeObject<List<Appointment>>(serializedAppointments) ?? [];
-        // Check if the appointment is already in the cache
-        return !appointmentsForDate.Exists(a => a.Equals(appointment));
     }
 
     // Mark an appointment as processed
@@ -52,7 +37,7 @@ public class AppointmentCacheRedis : AppointmentCacheBase
         // Update Redis cache by location and date range
         for (DateTime date = startDate.Date; date <= endDate.Date; date = date.AddDays(1))
         {
-            var key = GenerateCacheKey(locationId, date);
+            var key = GenerateRedisCacheKey(locationId, date);
             // Get appointments for the date
             var appointmentsForDate = appointments.Where(a => a.Date.Date == date).ToList();
             // Serialize the appointments
@@ -62,13 +47,13 @@ public class AppointmentCacheRedis : AppointmentCacheBase
         }
     }
     // Get the appointments from the cache by location and date range
-        public override List<Appointment> GetCachedAppointments(int locationId, DateTime startDate, DateTime endDate)
+    protected override List<Appointment> GetCachedAppointments(int locationId, DateTime startDate, DateTime endDate)
     {
         var appointments = new List<Appointment>();
         for (DateTime date = startDate.Date; date <= endDate.Date; date = date.AddDays(1))
         {
-            var key = GenerateCacheKey(locationId, date);
-            // Get appointments for the date
+            var key = GenerateRedisCacheKey(locationId, date);
+            // Get appointments for this date
             var redisValue = _redisDatabase.StringGet(key);
             if (redisValue.IsNullOrEmpty)
             {
@@ -83,11 +68,11 @@ public class AppointmentCacheRedis : AppointmentCacheBase
     #region Private Methods
 
     // Generate a unique key used to cache all open appointments for a given location on a given date
-    protected static string GenerateCacheKey(Appointment appointment)
+    protected static string GenerateRedisCacheKey(Appointment appointment)
     {
-        return GenerateCacheKey(appointment.LocationId, appointment.Date);
+        return GenerateRedisCacheKey(appointment.LocationId, appointment.Date);
     }
-    protected static string GenerateCacheKey(int locationId, DateTime date)
+    protected static string GenerateRedisCacheKey(int locationId, DateTime date)
     {
         return $"{locationId}-{date.ToString("yyyy-MM-dd")}";
     }

@@ -63,7 +63,8 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
             cache.CacheAppointments(_locationId, _startDate, _endDate, appointments);
 
             // Assert
-            var cachedAppointments = cache.GetCachedAppointments(_locationId, _startDate, _endDate);
+            cache.LoadCachedAppointments(_locationId, _startDate, _endDate);
+            var cachedAppointments = cache.GetCachedAppointments();
             Assert.True(appointments.Count == cachedAppointments.Count, $"Scenerio: {scenerioId} - Count mismatch");
             for (int i = 0; i < appointments.Count; i++)
             {

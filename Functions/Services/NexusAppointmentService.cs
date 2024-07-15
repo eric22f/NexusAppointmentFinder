@@ -22,6 +22,7 @@ public class NexusAppointmentService
     private readonly ILogger<NexusAppointmentService> _logger;
     private readonly string _traceId;
     private readonly AppointmentCacheFactory _appointmentCacheFactory;
+    private AppointmentCacheBase? _appointmentsCache;
 
     public bool IsProcessAppointmentsSuccess { get; private set; }
 
@@ -65,20 +66,19 @@ public class NexusAppointmentService
     {
         IsProcessAppointmentsSuccess = false;
         _logger.LogInformation($"[{_traceId}] ProcessAppointments started - Location ID: {_locationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
-        var stopwatch = Stopwatch.StartNew();
         var stopwatchTotal = Stopwatch.StartNew();
         List<Appointment> appointments = [];
         List<Appointment> openAppointments = [];
         try
         {
             // Fetch appointment data from API
-            string appointmentData = await PullAppointmentDataFromNexusApi(stopwatch);
+            string appointmentData = await PullAppointmentDataFromNexusApi();
 
             // Convert JSON data to list of Appointments
-            appointments = ConvertNexusApiResultsToAppointmentsList(stopwatch, appointmentData);
+            appointments = ConvertNexusApiResultsToAppointmentsList(appointmentData);
 
             // Filter appointments with openings
-            openAppointments = FilterToAvailableAppointments(stopwatch, appointments);
+            openAppointments = FilterToAvailableAppointments(appointments);
 
             // Check if there are any open appointments
             if (openAppointments.Count == 0)
@@ -88,21 +88,24 @@ public class NexusAppointmentService
                 return openAppointments;
             }
 
+            // Get the cache client
+            _appointmentsCache = _appointmentCacheFactory.CreateCacheClient();
+
             // Check which appointments are new and have not been processed before            
-            AppointmentCacheBase? appointmentsCache = CheckCacheForNewAppointments(stopwatch, ref openAppointments);
+            var newAppointments = CheckCacheForNewAppointments(openAppointments);
 
             // Check if we should send open appointments to the service bus to trigger notifications
-            if (openAppointments.Count > 0)
+            if (newAppointments.Count > 0)
             {
-                await SubmitNewAppointmentsForNotifications(stopwatch, openAppointments);
+                await SubmitNewAppointmentsForNotifications(newAppointments);
             }
             else
             {
                 _logger.LogInformation($"[{_traceId}] No new appointments found.");
             }
 
-            // Cache the new open appointments
-            CacheNewAppointments(stopwatch, openAppointments, appointmentsCache);
+            // Cache open appointments
+            CacheOpenAppointments(openAppointments);
 
             IsProcessAppointmentsSuccess = true;
         }
@@ -121,14 +124,14 @@ public class NexusAppointmentService
 
 #region Private Methods
     // Fetch appointment data from Nexus Appointments API
-    private async Task<string> PullAppointmentDataFromNexusApi(Stopwatch stopwatch)
+    private async Task<string> PullAppointmentDataFromNexusApi()
     {
+        var stopwatch = Stopwatch.StartNew();
         HttpClient httpClient = new();
         string uri = GetNexusAppointmentsApiUrl();
         var appointmentData = await httpClient.GetStringAsync(uri);
         stopwatch.Stop();
         _logger.LogTrace($"[{_traceId}] Fetching appointment data took: {stopwatch.ElapsedMilliseconds} ms");
-        stopwatch.Restart();
         return appointmentData;
     }
 
@@ -142,53 +145,56 @@ public class NexusAppointmentService
 
 
     // Convert JSON data to list of Appointments
-    private List<Appointment> ConvertNexusApiResultsToAppointmentsList(Stopwatch stopwatch, string appointmentData)
+    private List<Appointment> ConvertNexusApiResultsToAppointmentsList(string appointmentData)
     {
+        var stopwatch = Stopwatch.StartNew();
         List<Appointment> appointments;
         var appointmentConverter = new AppointmentConverter();
         appointments = appointmentConverter.ConvertFromJson(appointmentData, _locationId);
         stopwatch.Stop();
         _logger.LogTrace($"[{_traceId}] Converting JSON data took: {stopwatch.ElapsedMilliseconds} ms to process {appointments.Count} appointments");
-        stopwatch.Restart();
         return appointments;
     }
 
     // Filter appointments with openings
-    private List<Appointment> FilterToAvailableAppointments(Stopwatch stopwatch, List<Appointment> appointments)
+    private List<Appointment> FilterToAvailableAppointments(List<Appointment> appointments)
     {
+        var stopwatch = Stopwatch.StartNew();
         List<Appointment> openAppointments = appointments.Where(a => a.Openings > 0).ToList();
         stopwatch.Stop();
         _logger.LogTrace($"[{_traceId}] Filtering appointments took: {stopwatch.ElapsedMilliseconds} ms to locate {openAppointments.Count} available appointments");
-        stopwatch.Restart();
         return openAppointments;
     }
 
     // Check which appointments are new and have not been processed before
-    // Returns the cache client if available
-    private AppointmentCacheBase? CheckCacheForNewAppointments(Stopwatch stopwatch, ref List<Appointment> openAppointments)
+    // If a cache client is not available then all appointments are considered new
+    private List<Appointment> CheckCacheForNewAppointments(List<Appointment> openAppointments)
     {
-        var appointmentsCache = _appointmentCacheFactory.CreateCacheClient();
-        if (appointmentsCache != null)
+        List<Appointment> newAppointments = [];
+        if (_appointmentsCache != null)
         {
-            openAppointments = openAppointments.Where(a => appointmentsCache.IsAppointmentNew(a)).ToList();
+            var stopwatch = Stopwatch.StartNew();
+            _appointmentsCache.LoadCachedAppointments(_locationId, _fromDate, _toDate);
+            newAppointments = openAppointments.Where(a => _appointmentsCache.IsAppointmentNew(a)).ToList();
             stopwatch.Stop();
             _logger.LogTrace($"[{_traceId}] Checking cache for new appointments took: {stopwatch.ElapsedMilliseconds} ms");
-            stopwatch.Restart();
         }
         else
         {
-            _logger.LogWarning($"[{_traceId}] Cache client is not available. Not checking appointments if appointments are new.");
+            _logger.LogWarning($"[{_traceId}] Cache client is not available. Not checking if appointments are new.");
+            newAppointments = openAppointments;
         }
 
-        return appointmentsCache;
+        return newAppointments;
     }
 
     // Send open appointments to Service Bus
-    private async Task SubmitNewAppointmentsForNotifications(Stopwatch stopwatch, List<Appointment> openAppointments)
+    private async Task SubmitNewAppointmentsForNotifications(List<Appointment> openAppointments)
     {
         if (_configuration["ServiceBus:Enabled"] == "true")
         {
             // Send open appointments to Service Bus
+            var stopwatch = Stopwatch.StartNew();
             var serviceBus = ServiceBusCreator.CreateServiceBusClient(_configuration);
             var message = new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(openAppointments)));
             await serviceBus.SendAsync(message);
@@ -202,13 +208,15 @@ public class NexusAppointmentService
     }
 
     // Cache the new open appointments if the cache client is available
-    private void CacheNewAppointments(Stopwatch stopwatch, List<Appointment> openAppointments, AppointmentCacheBase? appointmentsCache)
+    private void CacheOpenAppointments(List<Appointment> openAppointments)
     {
-        if (appointmentsCache != null)
+        if (_appointmentsCache != null)
         {
             // Cache the open appointments
+            var stopwatch = Stopwatch.StartNew();
+            _appointmentsCache.CacheAppointments(_locationId, _fromDate, _toDate, openAppointments);
             stopwatch.Stop();
-            appointmentsCache.CacheAppointments(_locationId, _fromDate, _toDate, openAppointments);
+            _logger.LogTrace($"[{_traceId}] Caching open appointments took: {stopwatch.ElapsedMilliseconds} ms");
         }
     }
 #endregion

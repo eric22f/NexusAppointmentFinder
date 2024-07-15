@@ -4,6 +4,7 @@ using NexusAzureFunctions.Models;
 using Microsoft.Extensions.Configuration;
 using System.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Mvc.Localization;
 
 namespace NexusAzureFunctions.Helpers;
 
@@ -26,7 +27,7 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
         InsertAppointments(appointments);
     }
     // Get the appointments from the database by location and date range
-    public override List<Appointment> GetCachedAppointments(int locationId, DateTime startDate, DateTime endDate)
+    protected override List<Appointment> GetCachedAppointments(int locationId, DateTime startDate, DateTime endDate)
     {
         var appointments = new List<Appointment>();
 
@@ -59,22 +60,7 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
         }
         return appointments;
     }
-
-    // Check if the appointment is new by checking if it exists in the database
-    public override bool IsAppointmentNew(Appointment appointment)
-    {
-        using SqlConnection connection = new(_connectionString);
-        string query = "SELECT COUNT(*) FROM NexusAppointmentsAvailability WHERE LocationId = @LocationId"
-                     + " AND AppointmentDate = @AppointmentDate";
-        SqlCommand command = new(query, connection);
-        command.Parameters.AddWithValue("@LocationId", appointment.LocationId);
-        command.Parameters.AddWithValue("@AppointmentDate", appointment.Date);
-
-        connection.Open();
-        int count = (int)command.ExecuteScalar();
-        return count == 0;
-    }
-
+    
     #region Private Methods
 
     // Clear any existing appointments for the location by date range
