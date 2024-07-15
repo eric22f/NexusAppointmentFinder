@@ -64,13 +64,14 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
     public override bool IsAppointmentNew(Appointment appointment)
     {
         using SqlConnection connection = new(_connectionString);
-        string query = "SELECT COUNT(*) FROM NexusAppointmentsAvailability WHERE AppointmentKey = @AppointmentKey";
-        SqlCommand command = new SqlCommand(query, connection);
-        command.Parameters.AddWithValue("@AppointmentKey", appointment.AppointmentKey);
+        string query = "SELECT COUNT(*) FROM NexusAppointmentsAvailability WHERE LocationId = @LocationId"
+                     + " AND AppointmentDate = @AppointmentDate";
+        SqlCommand command = new(query, connection);
+        command.Parameters.AddWithValue("@LocationId", appointment.LocationId);
+        command.Parameters.AddWithValue("@AppointmentDate", appointment.Date);
 
         connection.Open();
         int count = (int)command.ExecuteScalar();
-
         return count == 0;
     }
 
