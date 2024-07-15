@@ -21,7 +21,7 @@ public class FunctionHttpGetAppointments(ILogger<FunctionHttpGetAppointments> lo
         _logger.LogInformation($"[{_tracer.Id}]{context.FunctionDefinition.Name} requested with Invocation ID: {context.InvocationId}.");
         var availableAppointments = await _appointmentsSvc.ProcessAppointments();
     
-        if (!_appointmentsSvc.IsProcessAppointmentsSuccess) 
+        if (!_appointmentsSvc.IsProcessAppointmentsSuccess)
         { 
             return new BadRequestObjectResult($"An error occurred processing appointments. (Reference trace log id: {_tracer.Id})");
         }
@@ -31,8 +31,8 @@ public class FunctionHttpGetAppointments(ILogger<FunctionHttpGetAppointments> lo
         }
         if (availableAppointments.Count == 1)
         {
-            return new OkObjectResult($"One appointment found:\n{availableAppointments}");
+            return new OkObjectResult($"One Appointment available: {string.Join("\n", availableAppointments.Select(a => a.ToString()))}");
         }
-        return new OkObjectResult($"Open appointments found: {availableAppointments.Count}.\n{availableAppointments}");
+        return new OkObjectResult($"Appointments available: {availableAppointments.Count}.\n{string.Join("\n", availableAppointments.Select(a => a.ToString()))}");
     }
 }
