@@ -26,36 +26,44 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
         // Insert the open appointments
         InsertAppointments(appointments);
     }
+    
     // Get the appointments from the database by location and date range
     protected override List<Appointment> GetCachedAppointments(int locationId, DateTime startDate, DateTime endDate)
     {
-        var appointments = new List<Appointment>();
+        List<Appointment> appointments = [];
+        int retryCountRemaining = 1;
 
-        using (SqlConnection connection = new (_connectionString))
+        while (retryCountRemaining > 0)
         {
-            string query = "SELECT * FROM NexusAppointmentsAvailability WHERE LocationId = @LocationId AND AppointmentDate >= @StartDate AND AppointmentDate <= @EndDate";
-            SqlCommand command = new SqlCommand(query, connection);
-            command.Parameters.AddWithValue("@LocationId", locationId);
-            command.Parameters.AddWithValue("@StartDate", startDate);
-            command.Parameters.AddWithValue("@EndDate", endDate);
-
-            connection.Open();
-            using SqlDataReader reader = command.ExecuteReader();
-            while (reader.Read())
+            try
             {
-                // Create an appointment from the database record
-                Appointment appointment = new()
+                using SqlConnection connection = new(_connectionString);
+                string query = "SELECT * FROM NexusAppointmentsAvailability WHERE LocationId = @LocationId AND AppointmentDate >= @StartDate AND AppointmentDate <= @EndDate";
+                SqlCommand command = new(query, connection);
+                command.Parameters.AddWithValue("@LocationId", locationId);
+                command.Parameters.AddWithValue("@StartDate", startDate);
+                command.Parameters.AddWithValue("@EndDate", endDate);
+
+                connection.Open();
+                using SqlDataReader reader = command.ExecuteReader();
+                while (reader.Read())
                 {
-                    Date = reader.GetDateTime(1),
-                    LocationId = reader.GetInt32(2),
-                    Openings = reader.GetInt16(3),
-                    TotalSlots = reader.GetInt16(4),
-                    Pending = reader.GetInt16(5),
-                    Conflicts = reader.GetInt16(6),
-                    Duration = reader.GetInt16(7)
-                };
-                // Add the appointment to the cache
-                appointments.Add(appointment);
+                    appointments.Add(new Appointment
+                    {
+                        Date = reader.GetDateTime(1),
+                        LocationId = reader.GetInt32(2),
+                        Openings = reader.GetInt16(3),
+                        TotalSlots = reader.GetInt16(4),
+                        Pending = reader.GetInt16(5),
+                        Conflicts = reader.GetInt16(6),
+                        Duration = reader.GetInt16(7)
+                    });
+                }
+                retryCountRemaining = 0;
+            }
+            catch (TimeoutException) when (retryCountRemaining-- > 0)
+            {
+                continue;
             }
         }
         return appointments;
@@ -66,22 +74,36 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
     // Clear any existing appointments for the location by date range
     private void ClearAppointmentsByDate(int locationId, DateTime startDate, DateTime endDate)
     {
-        using SqlConnection connection = new(_connectionString);
-        // Clear out any existing appointments for the location by date range
-        bool includeStartDate = startDate.AddDays(-1) > DateTime.Today;
-        string query = "DELETE FROM NexusAppointmentsAvailability"
-                    + " WHERE LocationId = @LocationId"
-                    + (includeStartDate ? " AND AppointmentDate >= @StartDate" : "")
-                    + " AND AppointmentDate <= @EndDate";
-        SqlCommand command = new(query, connection);
-        command.Parameters.AddWithValue("@LocationId", locationId);
-        if (includeStartDate)
+        int retryCountRemaining = 1;
+
+        while (retryCountRemaining > 0)
         {
-            command.Parameters.AddWithValue("@StartDate", startDate);
+            try
+            {
+                using SqlConnection connection = new(_connectionString);
+                // Clear out any existing appointments for the location by date range
+                bool includeStartDate = startDate.AddDays(-1) > DateTime.Today;
+                string query = "DELETE FROM NexusAppointmentsAvailability"
+                            + " WHERE LocationId = @LocationId"
+                            + (includeStartDate ? " AND AppointmentDate >= @StartDate" : "")
+                            + " AND AppointmentDate <= @EndDate";
+                SqlCommand command = new(query, connection);
+                command.Parameters.AddWithValue("@LocationId", locationId);
+                if (includeStartDate)
+                {
+                    command.Parameters.AddWithValue("@StartDate", startDate);
+                }
+                command.Parameters.AddWithValue("@EndDate", endDate);
+                connection.Open();
+                command.ExecuteNonQuery();
+                // No need to retry
+                retryCountRemaining = 0;
+            }
+            catch (TimeoutException) when (retryCountRemaining-- > 0)
+            {
+                continue;
+            }
         }
-        command.Parameters.AddWithValue("@EndDate", endDate);
-        connection.Open();
-        command.ExecuteNonQuery();
     }
 
     // Insert the appointment into the database
