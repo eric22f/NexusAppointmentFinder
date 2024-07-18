@@ -20,7 +20,7 @@ public class FunctionHttpGetAppointments(ILogger<FunctionHttpGetAppointments> lo
     {
         try
         {
-            _logger.LogInformation($"[{_tracer.Id}]{context.FunctionDefinition.Name} requested with Invocation ID: {context.InvocationId}.");
+            _logger.LogInformation($"[{_tracer.Id}] {context.FunctionDefinition.Name} requested with Invocation ID: {context.InvocationId}.");
             var availableAppointments = await _appointmentsSvc.ProcessAppointments();
         
             if (!_appointmentsSvc.IsProcessAppointmentsSuccess)
@@ -39,7 +39,7 @@ public class FunctionHttpGetAppointments(ILogger<FunctionHttpGetAppointments> lo
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"[{_tracer.Id}]{context.FunctionDefinition.Name} failed with Invocation ID: {context.InvocationId}.");
+            _logger.LogError(ex, $"[{_tracer.Id}] {context.FunctionDefinition.Name} failed with Invocation ID: {context.InvocationId}.");
             return new BadRequestObjectResult($"An error occurred processing appointments. (Reference trace log id: {_tracer.Id})");
         }
     }
