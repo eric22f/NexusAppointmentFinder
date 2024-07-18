@@ -62,7 +62,7 @@ public class NexusAppointmentService
     {
         if (_locationId == 0)
         {
-            throw new InvalidOperationException("Location ID is not set. Cannot process appointments.");
+            throw new InvalidOperationException($"[{_traceId}] Location ID is not set. Cannot process appointments.");
         }
         IsProcessAppointmentsSuccess = false;
         _logger.LogInformation($"[{_traceId}] ProcessAppointments started - Location ID: {_locationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
