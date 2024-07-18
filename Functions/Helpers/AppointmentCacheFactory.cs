@@ -27,7 +27,7 @@ public class AppointmentCacheFactory(ILogger<AppointmentCacheFactory> logger, IL
         catch (Exception e)
         {
             // Log the exception
-            _logger.LogError($"[{_traceId}]Unable to create Redis cache client: {e.Message}", e);
+            _logger.LogError(e, $"[{_traceId}]Unable to create Redis cache client.");
         }
         try
         {
@@ -37,7 +37,7 @@ public class AppointmentCacheFactory(ILogger<AppointmentCacheFactory> logger, IL
         catch (Exception e)
         {
             // Log the exception
-            _logger.LogError($"[{_traceId}]Unable to create Database cache client: {e.Message}", e);
+            _logger.LogError(e, $"[{_traceId}]Unable to create Database cache client.");
         }
         throw new Exception("Unable to create cache client");
     }

@@ -38,10 +38,6 @@ public class NexusAppointmentService
         _appointmentCacheFactory = appointmentCacheFactory ?? throw new ArgumentNullException(nameof(appointmentCacheFactory));
 
         _locationId = _configuration.GetValue<int>("NexusApi:LocationId");
-        if (_locationId < 1)
-        {
-            throw new ArgumentException("NexusAPI Location ID is required to process appointments.");
-        }
         _totalDays = _configuration.GetValue<int>("NexusApi:TotalDays");
         if (_totalDays < 1)
         {
@@ -64,6 +60,10 @@ public class NexusAppointmentService
     // Returns all available appointments and sets IsProcessAppointmentsSuccess to true if successful
     public async Task<List<Appointment>> ProcessAppointments()
     {
+        if (_locationId == 0)
+        {
+            throw new InvalidOperationException("Location ID is not set. Cannot process appointments.");
+        }
         IsProcessAppointmentsSuccess = false;
         _logger.LogInformation($"[{_traceId}] ProcessAppointments started - Location ID: {_locationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
         var stopwatchTotal = Stopwatch.StartNew();
@@ -112,7 +112,7 @@ public class NexusAppointmentService
         catch (Exception ex)
         {
             // Handle any exceptions
-            _logger.LogError($"[{_traceId}] An error occurred while processing appointments: {ex.Message}");
+            _logger.LogError(ex, $"[{_traceId}] An error occurred while processing appointments.");
         }
         finally
         {
