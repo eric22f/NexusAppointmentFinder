@@ -33,7 +33,7 @@ var host = new HostBuilder()
 
         // Add services
         services.AddTransient<NexusAppointmentService>();
-        services.AddTransient<Tracer>();
+        services.AddScoped<Tracer>();
 
         // Add Configuration
         services.AddSingleton<IConfiguration>(sp => context.Configuration);
