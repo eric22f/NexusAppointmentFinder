@@ -9,8 +9,8 @@
             "enableLiveMetricsFilters": true
         },
         "logLevel": {
-            "default": "Trace",
-            "NexusAzureFunctions.FunctionHttpGetAppointments": "Trace"
+            "NexusAzureFunctions.FunctionHttpGetAppointments": "Trace",
+            "NexusAzureFunctions.NexusAppointmentService": "Trace"
         }
     }
 }
