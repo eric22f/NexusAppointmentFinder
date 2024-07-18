@@ -18,7 +18,6 @@ public class FunctionHttpGetAppointments(ILogger<FunctionHttpGetAppointments> lo
     public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
         FunctionContext context)
     {
-        return new OkObjectResult($"This is a test.");
         try
         {
             _logger.LogInformation($"[{_tracer.Id}]{context.FunctionDefinition.Name} requested with Invocation ID: {context.InvocationId}.");
