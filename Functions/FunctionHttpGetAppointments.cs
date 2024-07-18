@@ -18,21 +18,29 @@ public class FunctionHttpGetAppointments(ILogger<FunctionHttpGetAppointments> lo
     public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
         FunctionContext context)
     {
-        _logger.LogInformation($"[{_tracer.Id}]{context.FunctionDefinition.Name} requested with Invocation ID: {context.InvocationId}.");
-        var availableAppointments = await _appointmentsSvc.ProcessAppointments();
-    
-        if (!_appointmentsSvc.IsProcessAppointmentsSuccess)
-        { 
+        try
+        {
+            _logger.LogInformation($"[{_tracer.Id}]{context.FunctionDefinition.Name} requested with Invocation ID: {context.InvocationId}.");
+            var availableAppointments = await _appointmentsSvc.ProcessAppointments();
+        
+            if (!_appointmentsSvc.IsProcessAppointmentsSuccess)
+            { 
+                return new BadRequestObjectResult($"An error occurred processing appointments. (Reference trace log id: {_tracer.Id})");
+            }
+            if (availableAppointments.Count == 0)
+            {
+                return new OkObjectResult($"No appointments available.");
+            }
+            if (availableAppointments.Count == 1)
+            {
+                return new OkObjectResult($"One Appointment available: {string.Join("\n", availableAppointments.Select(a => a.ToString()))}");
+            }
+            return new OkObjectResult($"Appointments available: {availableAppointments.Count}.\n{string.Join("\n", availableAppointments.Select(a => a.ToString()))}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"[{_tracer.Id}]{context.FunctionDefinition.Name} failed with Invocation ID: {context.InvocationId}.");
             return new BadRequestObjectResult($"An error occurred processing appointments. (Reference trace log id: {_tracer.Id})");
         }
-        if (availableAppointments.Count == 0)
-        {
-            return new OkObjectResult($"No appointments available.");
-        }
-        if (availableAppointments.Count == 1)
-        {
-            return new OkObjectResult($"One Appointment available: {string.Join("\n", availableAppointments.Select(a => a.ToString()))}");
-        }
-        return new OkObjectResult($"Appointments available: {availableAppointments.Count}.\n{string.Join("\n", availableAppointments.Select(a => a.ToString()))}");
     }
 }
