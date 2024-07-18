@@ -29,7 +29,7 @@ public class FunctionHttpGetAppointments(ILogger<FunctionHttpGetAppointments> lo
             }
             if (availableAppointments.Count == 0)
             {
-                return new OkObjectResult($"No appointments available.");
+                return new OkObjectResult($"No appointments available - {DateTime.Now:yyyy-M-d h:mm:ss tt}");
             }
             if (availableAppointments.Count == 1)
             {
