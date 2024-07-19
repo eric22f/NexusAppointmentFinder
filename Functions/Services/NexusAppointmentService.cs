@@ -62,8 +62,8 @@ public class NexusAppointmentService
         }
         if (_totalDays < 1)
         {
-            _logger.LogWarning($"[{_traceId}] TotalDays is not set or invalid. Defaulting to 7 days.");
             _totalDays = 7;
+            _logger.LogWarning($"[{_traceId}] TotalDays is not set or invalid. Defaulting to {_totalDays} days.");
         }
         IsProcessAppointmentsSuccess = false;
         _logger.LogInformation($"[{_traceId}] ProcessAppointments started - Location ID: {_locationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
