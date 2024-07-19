@@ -1,22 +1,15 @@
 {
     "version": "2.0",
     "logging": {
+        "logLevel": {
+            "Function": "Debug"
+        },
         "applicationInsights": {
             "samplingSettings": {
                 "isEnabled": true,
                 "excludedTypes": "Request"
             },
             "enableLiveMetricsFilters": true
-        },
-        "logLevel": {
-            "Azure.Core": "Error",
-            "Azure.Identity": "Critical",
-            "Function": "Information",
-            "Host.Results": "Trace",
-            "Host.Aggregator": "Warning",
-            "Function.GetNexusAppointments": "Trace",
-            "Function.FunctionHttpGetAppointments": "Trace",
-            "Default": "Warning"
         }
     }
 }
