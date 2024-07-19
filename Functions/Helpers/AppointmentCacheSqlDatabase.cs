@@ -31,9 +31,9 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
     protected override List<Appointment> GetCachedAppointments(int locationId, DateTime startDate, DateTime endDate)
     {
         List<Appointment> appointments = [];
-        int retryCountRemaining = 1;
+        int retry = 1;
 
-        while (retryCountRemaining > 0)
+        while (retry >= 0)
         {
             try
             {
@@ -59,13 +59,15 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
                         Duration = reader.GetInt16(7)
                     });
                 }
-                retryCountRemaining = 0;
+                // Done
+                break;
             }
-            catch (TimeoutException) when (retryCountRemaining-- > 0)
+            catch (TimeoutException) when (retry-- > 0)
             {
                 continue;
             }
         }
+
         return appointments;
     }
     
@@ -74,9 +76,9 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
     // Clear any existing appointments for the location by date range
     private void ClearAppointmentsByDate(int locationId, DateTime startDate, DateTime endDate)
     {
-        int retryCountRemaining = 1;
+        int retry = 1;
 
-        while (retryCountRemaining > 0)
+        while (retry >= 0)
         {
             try
             {
@@ -96,10 +98,10 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
                 command.Parameters.AddWithValue("@EndDate", endDate);
                 connection.Open();
                 command.ExecuteNonQuery();
-                // No need to retry
-                retryCountRemaining = 0;
+                // Done
+                break;
             }
-            catch (TimeoutException) when (retryCountRemaining-- > 0)
+            catch (TimeoutException) when (retry-- > 0)
             {
                 continue;
             }
