@@ -9,8 +9,14 @@
             "enableLiveMetricsFilters": true
         },
         "logLevel": {
-            "Default": "Trace",
-            "Function": "Trace"
+            "Azure.Core": "Error",
+            "Azure.Identity": "Critical",
+            "Function": "Information",
+            "Host.Results": "Trace",
+            "Host.Aggregator": "Warning",
+            "Function.GetNexusAppointments": "Trace",
+            "Function.FunctionHttpGetAppointments": "Trace",
+            "Default": "Warning"
         }
     }
 }
