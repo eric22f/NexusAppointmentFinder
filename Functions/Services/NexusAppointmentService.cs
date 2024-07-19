@@ -16,7 +16,7 @@ public class NexusAppointmentService
     private readonly IConfiguration _configuration;
     private readonly string _nexusAppointmentsApiUrl;
     private readonly int _locationId;
-    private readonly int _totalDays;
+    private int _totalDays;
     private readonly DateTime _fromDate;
     private readonly DateTime _toDate;
     private readonly ILogger<NexusAppointmentService> _logger;
@@ -39,10 +39,6 @@ public class NexusAppointmentService
 
         _locationId = _configuration.GetValue<int>("NexusApi:LocationId");
         _totalDays = _configuration.GetValue<int>("NexusApi:TotalDays");
-        if (_totalDays < 1)
-        {
-            _totalDays = 7;
-        }
         _fromDate = DateTime.Today.AddDays(1);
         _toDate = _fromDate.AddDays(_totalDays);
         _nexusAppointmentsApiUrl = _configuration["NexusApi:BaseUrl"] + _configuration["NexusApi:QueryParams"]
@@ -63,6 +59,11 @@ public class NexusAppointmentService
         if (_locationId == 0)
         {
             throw new InvalidOperationException($"[{_traceId}] Location ID is not set. Cannot process appointments.");
+        }
+        if (_totalDays < 1)
+        {
+            _logger.LogWarning($"[{_traceId}] TotalDays is not set or invalid. Defaulting to 7 days.");
+            _totalDays = 7;
         }
         IsProcessAppointmentsSuccess = false;
         _logger.LogInformation($"[{_traceId}] ProcessAppointments started - Location ID: {_locationId} from {_fromDate.ToShortDateString()} to {_toDate.ToShortDateString()}");
