@@ -10,7 +10,7 @@
         },
         "logLevel": {
             "Default": "Trace",
-            "NexusAzureFunctions.NexusAppointmentService": "Trace"
+            "Function": "Trace"
         }
     }
 }
