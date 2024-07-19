@@ -26,7 +26,6 @@ var host = new HostBuilder()
             logging.AddConsole();
             logging.AddApplicationInsights(); // Optional
             logging.AddConfiguration(configuration.GetSection("Logging"));
-            logging.SetMinimumLevel(LogLevel.Trace);
         });
 
         services.AddApplicationInsightsTelemetryWorkerService();
