@@ -22,20 +22,22 @@ public class FunctionHttpGetAppointments(ILogger<FunctionHttpGetAppointments> lo
         {
             _logger.LogInformation($"[{_tracer.Id}] {context.FunctionDefinition.Name} requested with Invocation ID: {context.InvocationId}.");
             var availableAppointments = await _appointmentsSvc.ProcessAppointments();
+            int days = _appointmentsSvc.TotalDays;
+            int count = availableAppointments.Count;
         
             if (!_appointmentsSvc.IsProcessAppointmentsSuccess)
             { 
                 return new BadRequestObjectResult($"An error occurred processing appointments. (Reference trace log id: {_tracer.Id})");
             }
-            if (availableAppointments.Count == 0)
+            if (count == 0)
             {
-                return new OkObjectResult($"No appointments available - {DateTime.Now:M-d-yyyy h:mm:ss tt}");
+                return new OkObjectResult($"No appointments available for the next {days} days.  ({DateTime.Now:M-d-yyyy h:mm:ss tt})");
             }
-            if (availableAppointments.Count == 1)
+            if (count == 1)
             {
-                return new OkObjectResult($"One Appointment available: {string.Join("\n", availableAppointments.Select(a => a.ToString()))}");
+                return new OkObjectResult($"One Appointment found within the next {days} days:\n {string.Join("\n", availableAppointments.Select(a => a.ToString()))}");
             }
-            return new OkObjectResult($"Appointments available: {availableAppointments.Count}.\n{string.Join("\n", availableAppointments.Select(a => a.ToString()))}");
+            return new OkObjectResult($"{count} appointments found within the next {days} days:\n {availableAppointments.Count}.\n{string.Join("\n", availableAppointments.Select(a => a.ToString()))}");
         }
         catch (Exception ex)
         {

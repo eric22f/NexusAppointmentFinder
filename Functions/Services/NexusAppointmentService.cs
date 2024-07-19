@@ -25,6 +25,7 @@ public class NexusAppointmentService
     private AppointmentCacheBase? _appointmentsCache;
 
     public bool IsProcessAppointmentsSuccess { get; private set; }
+    public int TotalDays => _totalDays;
 
     public NexusAppointmentService(
         ILogger<NexusAppointmentService> logger,
