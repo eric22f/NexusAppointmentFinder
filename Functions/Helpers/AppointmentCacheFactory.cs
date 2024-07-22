@@ -5,10 +5,8 @@ namespace NexusAzureFunctions.Helpers;
 
 // This static class is used to create a cache client by first connecting to Redis
 // If Redis is not available then to a database
-public class AppointmentCacheFactory(ILogger<AppointmentCacheFactory> logger, ILoggerFactory loggerFactory,
-    Tracer tracer, IConfiguration config)
+public class AppointmentCacheFactory(ILoggerFactory loggerFactory, Tracer tracer, IConfiguration config)
 {
-    private readonly ILogger<AppointmentCacheFactory> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly ILoggerFactory _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
     private readonly string _traceId = tracer.Id ?? throw new ArgumentNullException(nameof(tracer.Id));
     private readonly IConfiguration _config = config ?? throw new ArgumentNullException(nameof(config));
@@ -27,7 +25,7 @@ public class AppointmentCacheFactory(ILogger<AppointmentCacheFactory> logger, IL
         catch (Exception e)
         {
             // Log the exception
-            _logger.LogError(e, $"[{_traceId}] Unable to create Redis cache client.");
+            _loggerFactory.CreateLogger<AppointmentCacheBase>().LogError(e, $"[{_traceId}] Unable to create Redis cache client.");
         }
         try
         {
@@ -37,7 +35,7 @@ public class AppointmentCacheFactory(ILogger<AppointmentCacheFactory> logger, IL
         catch (Exception e)
         {
             // Log the exception
-            _logger.LogError(e, $"[{_traceId}] Unable to create Database cache client.");
+            _loggerFactory.CreateLogger<AppointmentCacheBase>().LogError(e, $"[{_traceId}] Unable to create Database cache client.");
         }
         throw new Exception("Unable to create cache client");
     }
