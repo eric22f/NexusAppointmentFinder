@@ -85,7 +85,6 @@ public class NexusAppointmentService
             // Check if there are any open appointments
             if (openAppointments.Count == 0)
             {
-                _logger.LogInformation($"[{_traceId}] No available appointments found.");
                 IsProcessAppointmentsSuccess = true;
                 return openAppointments;
             }
@@ -100,10 +99,6 @@ public class NexusAppointmentService
             if (newAppointments.Count > 0)
             {
                 await SubmitNewAppointmentsForNotifications(newAppointments);
-            }
-            else
-            {
-                _logger.LogInformation($"[{_traceId}] No new appointments found.");
             }
 
             // Cache open appointments
@@ -133,7 +128,7 @@ public class NexusAppointmentService
         string uri = GetNexusAppointmentsApiUrl();
         var appointmentData = await httpClient.GetStringAsync(uri);
         stopwatch.Stop();
-        _logger.LogTrace($"[{_traceId}] Fetching appointment data took: {stopwatch.ElapsedMilliseconds} ms");
+        _logger.LogTrace($"[{_traceId}] Fetching appointment data took: {stopwatch.ElapsedMilliseconds} ms\nFrom: {uri}");
         return appointmentData;
     }
 
@@ -179,7 +174,7 @@ public class NexusAppointmentService
             _appointmentsCache.LoadCachedAppointments(_locationId, _fromDate, _toDate);
             newAppointments = openAppointments.Where(a => _appointmentsCache.IsAppointmentNew(a)).ToList();
             stopwatch.Stop();
-            _logger.LogTrace($"[{_traceId}] Checking cache for new appointments took: {stopwatch.ElapsedMilliseconds} ms");
+            _logger.LogTrace($"[{_traceId}] Checking cache for {newAppointments.Count} new appointments took: {stopwatch.ElapsedMilliseconds} ms");
         }
         else
         {
@@ -190,18 +185,18 @@ public class NexusAppointmentService
         return newAppointments;
     }
 
-    // Send open appointments to Service Bus
-    private async Task SubmitNewAppointmentsForNotifications(List<Appointment> openAppointments)
+    // Send new open appointments to Service Bus
+    private async Task SubmitNewAppointmentsForNotifications(List<Appointment> newAppointments)
     {
         if (_configuration["ServiceBus:Enabled"] == "true")
         {
             // Send open appointments to Service Bus
             var stopwatch = Stopwatch.StartNew();
             var serviceBus = ServiceBusCreator.CreateServiceBusClient(_configuration);
-            var message = new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(openAppointments)));
+            var message = new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(newAppointments)));
             await serviceBus.SendAsync(message);
             stopwatch.Stop();
-            _logger.LogTrace($"[{_traceId}] Sending the new appointments to Service Bus took: {stopwatch.ElapsedMilliseconds} ms");
+            _logger.LogTrace($"[{_traceId}] Sending {newAppointments.Count} new appointments to Service Bus took: {stopwatch.ElapsedMilliseconds} ms");
         }
         else
         {
@@ -209,7 +204,7 @@ public class NexusAppointmentService
         }
     }
 
-    // Cache the new open appointments if the cache client is available
+    // Cache the all open appointments if the cache client is available
     private void CacheOpenAppointments(List<Appointment> openAppointments)
     {
         if (_appointmentsCache != null)
@@ -218,7 +213,7 @@ public class NexusAppointmentService
             var stopwatch = Stopwatch.StartNew();
             _appointmentsCache.CacheAppointments(_locationId, _fromDate, _toDate, openAppointments);
             stopwatch.Stop();
-            _logger.LogTrace($"[{_traceId}] Caching open appointments took: {stopwatch.ElapsedMilliseconds} ms");
+            _logger.LogTrace($"[{_traceId}] Caching {openAppointments.Count} open appointments took: {stopwatch.ElapsedMilliseconds} ms");
         }
     }
 #endregion
