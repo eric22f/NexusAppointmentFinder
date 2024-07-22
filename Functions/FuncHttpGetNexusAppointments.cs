@@ -7,14 +7,14 @@ using NexusAzureFunctions.Helpers;
 
 namespace NexusAzureFunctions;
 
-public class FunctionHttpGetAppointments(ILogger<FunctionHttpGetAppointments> logger, NexusAppointmentService appointmentsSvc,
+public class FuncHttpGetNexusAppointments(ILogger<FuncHttpGetNexusAppointments> logger, NexusAppointmentService appointmentsSvc,
     Tracer tracer)
 {
-    private readonly ILogger<FunctionHttpGetAppointments> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ILogger<FuncHttpGetNexusAppointments> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly NexusAppointmentService _appointmentsSvc = appointmentsSvc ?? throw new ArgumentNullException(nameof(appointmentsSvc));
     private readonly Tracer _tracer = tracer ?? throw new ArgumentNullException(nameof(tracer));
 
-    [Function("FunctionHttpGetAppointments")]
+    [Function("GetNexusAppointments")]
     public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
         FunctionContext context)
     {
