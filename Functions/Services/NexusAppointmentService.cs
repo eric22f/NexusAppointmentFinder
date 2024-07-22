@@ -136,8 +136,8 @@ public class NexusAppointmentService
     private string GetNexusAppointmentsApiUrl()
     {
         return _nexusAppointmentsApiUrl.Replace("[LOCATION_ID]", _locationId.ToString())
-            .Replace("[START_DATE]", _fromDate.ToString("yyyy-MM-ddT00:00:00"))
-            .Replace("[END_DATE]", _toDate.ToString("yyyy-MM-ddT00:00:00"));
+            .Replace("[START_DATE]", _fromDate.ToString("yyyy-MM-ddT00:00"))
+            .Replace("[END_DATE]", _toDate.ToString("yyyy-MM-ddT00:00"));
     }
 
 
