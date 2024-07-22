@@ -14,7 +14,6 @@ public class Tracer
         var ticks = DateTime.UtcNow.Ticks - _baseTicks;
         string base36 = Base36Converter.ToBase36(ticks);
         _traceId = InsertDashes(base36, 5);
-
     }
 
     // Unique Id for logging
