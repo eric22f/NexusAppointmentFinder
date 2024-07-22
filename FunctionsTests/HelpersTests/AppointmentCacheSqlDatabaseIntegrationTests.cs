@@ -7,7 +7,7 @@ using NexusAzureFunctions.Helpers;
 using NexusAzureFunctions.Models;
 using Xunit.Abstractions;
 
-namespace NexusAppointmentService.Tests.Helpers;
+namespace NexusAzureFunctionsTests.HelpersTests;
 
 public class AppointmentCacheSqlDatabaseIntegrationTests
 {

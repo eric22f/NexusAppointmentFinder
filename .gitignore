@@ -42,6 +42,7 @@ ScaffoldingReadMe.txt
 
 # Azure Functions local settings file
 local.settings.json
+local.test.settings.json
 
 # Azure Function application logs
 *.log

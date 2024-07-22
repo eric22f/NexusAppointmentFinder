@@ -22,6 +22,7 @@ public class NexusAppointmentService
     private readonly ILogger<NexusAppointmentService> _logger;
     private readonly string _traceId;
     private readonly AppointmentCacheFactory _appointmentCacheFactory;
+    private readonly HttpClient _httpClient;
     private AppointmentCacheBase? _appointmentsCache;
 
     public bool IsProcessAppointmentsSuccess { get; private set; }
@@ -31,12 +32,14 @@ public class NexusAppointmentService
         ILogger<NexusAppointmentService> logger,
         IConfiguration configuration,
         Tracer tracer,
-        AppointmentCacheFactory appointmentCacheFactory)
+        AppointmentCacheFactory appointmentCacheFactory,
+        HttpClient? httpClient = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _traceId = tracer?.Id ?? throw new ArgumentNullException(nameof(tracer));
         _appointmentCacheFactory = appointmentCacheFactory ?? throw new ArgumentNullException(nameof(appointmentCacheFactory));
+        _httpClient = httpClient ?? new HttpClient();
 
         _locationId = _configuration.GetValue<int>("NexusApi:LocationId");
         _totalDays = _configuration.GetValue<int>("NexusApi:TotalDays");
@@ -124,9 +127,8 @@ public class NexusAppointmentService
     private async Task<string> PullAppointmentDataFromNexusApi()
     {
         var stopwatch = Stopwatch.StartNew();
-        HttpClient httpClient = new();
         string uri = GetNexusAppointmentsApiUrl();
-        var appointmentData = await httpClient.GetStringAsync(uri);
+        var appointmentData = await _httpClient.GetStringAsync(uri);
         stopwatch.Stop();
         _logger.LogTrace($"[{_traceId}] Fetching appointment data took: {stopwatch.ElapsedMilliseconds} ms\nFrom: {uri}");
         return appointmentData;
