@@ -3,8 +3,6 @@ using System.Data;
 using NexusAzureFunctions.Models;
 using Microsoft.Extensions.Configuration;
 using System.Configuration;
-using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Mvc.Localization;
 
 namespace NexusAzureFunctions.Helpers;
 
@@ -12,10 +10,11 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
 {
     private readonly string _connectionString;
 
-    public AppointmentCacheSqlDatabase(ILogger<AppointmentCacheSqlDatabase> logger, string traceId, IConfiguration configuration)
+    public AppointmentCacheSqlDatabase(IConfiguration configuration)
     {
         var config = configuration ?? throw new ArgumentNullException(nameof(configuration));
-        _connectionString = config["SqlDatabase:SqlConnectionString"] ?? throw new ConfigurationErrorsException("Configuration setting 'SqlDatabase:SqlConnectionString' not found.");
+        _connectionString = config["SqlDatabase:SqlConnectionString"] ?? 
+            throw new ConfigurationErrorsException("Configuration setting 'SqlDatabase:SqlConnectionString' not found.");
     }
 
     // Add the appointment to the database
@@ -38,7 +37,8 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
             try
             {
                 using SqlConnection connection = new(_connectionString);
-                string query = "SELECT * FROM NexusAppointmentsAvailability WHERE LocationId = @LocationId AND AppointmentDate >= @StartDate AND AppointmentDate <= @EndDate";
+                string query = "SELECT * FROM NexusAppointmentsAvailability WHERE LocationId = @LocationId"
+                             + " AND AppointmentDate >= @StartDate AND AppointmentDate <= @EndDate";
                 SqlCommand command = new(query, connection);
                 command.Parameters.AddWithValue("@LocationId", locationId);
                 command.Parameters.AddWithValue("@StartDate", startDate);
@@ -86,9 +86,9 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
                 // Clear out any existing appointments for the location by date range
                 bool includeStartDate = startDate.AddDays(-1) > DateTime.Today;
                 string query = "DELETE FROM NexusAppointmentsAvailability"
-                            + " WHERE LocationId = @LocationId"
-                            + (includeStartDate ? " AND AppointmentDate >= @StartDate" : "")
-                            + " AND AppointmentDate <= @EndDate";
+                             + " WHERE LocationId = @LocationId"
+                             + (includeStartDate ? " AND AppointmentDate >= @StartDate" : "")
+                             + " AND AppointmentDate <= @EndDate";
                 SqlCommand command = new(query, connection);
                 command.Parameters.AddWithValue("@LocationId", locationId);
                 if (includeStartDate)
