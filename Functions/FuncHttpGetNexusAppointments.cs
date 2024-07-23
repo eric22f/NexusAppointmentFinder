@@ -31,7 +31,7 @@ public class FuncHttpGetNexusAppointments(ILogger<FuncHttpGetNexusAppointments> 
             }
             if (count == 0)
             {
-                return new OkObjectResult($"No appointments available for the next {days} days.  ({DateTime.Now:M-d-yyyy h:mm:ss tt})");
+                return new OkObjectResult($"No appointments available for the next {days} days as of {DateTime.Now:M-d-yyyy h:mm:ss tt}.");
             }
             if (count == 1)
             {
