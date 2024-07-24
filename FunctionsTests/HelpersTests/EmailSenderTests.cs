@@ -38,7 +38,7 @@ public class EmailSenderTests
         }
         // Arrange
         string subject = "Test - Nexus interview available";
-        string smsMsg =  $"{DateTime.Now:ddd M/d/yy h:mm tt}\nLocation (Location Full Description)";
+        string smsMsg =  $"Nexus interview available (Test):\n{DateTime.Now:ddd M/d/yy h:mm tt}\nLocation (Location Full Description)";
 
         // Act
         _emailSender.SendPlainEmail(_toEmailAddress, _toFullName, subject, smsMsg);
