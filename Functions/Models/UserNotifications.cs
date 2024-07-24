@@ -13,6 +13,8 @@ public class UserNotifications
     public int PhoneProviderId { get; set; }
     public bool NotifyByEmail { get; set; }
     public bool NotifyBySms { get; set; }
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
     public bool EmailConfirmed { get; set; }
     public bool AlternateEmailConfirmed { get; set; }
     public bool PhoneConfirmed { get; set; }
@@ -20,8 +22,13 @@ public class UserNotifications
     public string? LocationName { get; set; }
     public string? LocationDescription { get; set; }
 
+    public string GetFullName()
+    {
+        return $"{FirstName} {LastName}".Trim();
+    }
+
     public override string ToString()
     {
-        return $"UserId: {UserId}, Email: {Email}, AlternateEmail: {AlternateEmail}, Phone: {Phone}, NotifyByEmail: {NotifyByEmail}, NotifyBySms: {NotifyBySms}, EmailConfirmed: {EmailConfirmed}, AlternateEmailConfirmed: {AlternateEmailConfirmed}, PhoneConfirmed: {PhoneConfirmed}, LocationId: {LocationId}, LocationName: {LocationName}";
+        return $"UserId: {UserId}, Email: {Email}, AlternateEmail: {AlternateEmail}, Phone: {Phone}, PhoneProviderId: {PhoneProviderId}, NotifyByEmail: {NotifyByEmail}, NotifyBySms: {NotifyBySms}, FirstName: {FirstName}, LastName: {LastName}, EmailConfirmed: {EmailConfirmed}, AlternateEmailConfirmed: {AlternateEmailConfirmed}, PhoneConfirmed: {PhoneConfirmed}, LocationId: {LocationId}, LocationName: {LocationName}, LocationDescription: {LocationDescription}";
     }
 }

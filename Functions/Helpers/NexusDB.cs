@@ -27,7 +27,8 @@ public class NexusDB
 
         // Replace this with your actual query to retrieve users
         using SqlConnection connection = new(_connectionString);
-        string query = "SELECT u.UserId, u.Email, u.AlternateEmail, u.Phone, u.PhoneProviderId, u.NotifyByEmail, u.NotifyBySms,"
+        string query = "SELECT u.UserId, u.Email, u.AlternateEmail, u.Phone, u.PhoneProviderId, u.FirstName, u.LastName,"
+                     + " u.NotifyByEmail, u.NotifyBySms,"
                      + " u.EmailConfirmed, u.AlternateEmailConfirmed, u.PhoneConfirmed,"
                      + " l.LocationId, l.LocationName, l.LocationDescription"
                      + " FROM NexusUsers u"
@@ -49,6 +50,8 @@ public class NexusDB
                 AlternateEmail = reader["AlternateEmail"].ToString(),
                 Phone = reader["Phone"].ToString(),
                 PhoneProviderId = Convert.ToInt32(reader["PhoneProviderId"]),
+                FirstName = reader["FirstName"]?.ToString() ?? string.Empty,
+                LastName = reader["LastName"]?.ToString() ?? string.Empty,
                 NotifyByEmail = Convert.ToBoolean(reader["NotifyByEmail"]),
                 NotifyBySms = Convert.ToBoolean(reader["NotifyBySms"]),
                 EmailConfirmed = Convert.ToBoolean(reader["EmailConfirmed"]),
