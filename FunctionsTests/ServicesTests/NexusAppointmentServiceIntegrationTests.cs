@@ -1,16 +1,10 @@
 using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using Xunit;
 using NexusAzureFunctions.Services;
-using NexusAzureFunctions.Models;
 using NexusAzureFunctionsTests.Models;
 using Newtonsoft.Json;
-using System.Configuration;
 using NexusAzureFunctions.Helpers;
-using System.Data;
 using Microsoft.Extensions.Logging;
 using Moq.Protected;
 
