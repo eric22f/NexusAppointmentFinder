@@ -33,7 +33,9 @@ var host = new HostBuilder()
 
         // Add services
         services.AddTransient<NexusAppointmentService>();
+        services.AddTransient<NexusNotificationService>();
         services.AddScoped<Tracer>();
+        services.AddScoped<NexusDB>();
 
         // Add Configuration
         services.AddSingleton<IConfiguration>(sp => context.Configuration);

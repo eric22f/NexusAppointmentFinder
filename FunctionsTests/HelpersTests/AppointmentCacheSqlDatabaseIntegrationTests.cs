@@ -88,7 +88,7 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
 
     private AppointmentCacheSqlDatabase CreateAppointmentCache()
     {
-        return new AppointmentCacheSqlDatabase(_logger, new Tracer().Id, _config);
+        return new AppointmentCacheSqlDatabase(_config);
     }
 
     private List<Appointment> CreateAppointmentsList(int scenerioId)
