@@ -13,8 +13,8 @@ public class UserNotifications
     public int PhoneProviderId { get; set; }
     public bool NotifyByEmail { get; set; }
     public bool NotifyBySms { get; set; }
-    public string FirstName { get; set; }
-    public string LastName { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
     public bool EmailConfirmed { get; set; }
     public bool AlternateEmailConfirmed { get; set; }
     public bool PhoneConfirmed { get; set; }
