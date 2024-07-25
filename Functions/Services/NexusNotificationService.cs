@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Text;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Configuration;
@@ -11,12 +13,13 @@ namespace NexusAzureFunctions.Services;
 // This service is responsible for processing messages from the Service Bus
 // and sending notifications to users assigned to the appointment location received
 public class NexusNotificationService(ILogger<NexusNotificationService> logger, Tracer tracer,
-    IConfiguration config, NexusDB nexusDB)
+    IConfiguration config, NexusDB nexusDB, EmailSender emailSender)
 {
     private readonly ILogger<NexusNotificationService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly Tracer _tracer = tracer ?? throw new ArgumentNullException(nameof(tracer));
     private readonly IConfiguration _config = config ?? throw new ArgumentNullException(nameof(config));
     private readonly NexusDB _nexusDB = nexusDB ?? throw new ArgumentNullException(nameof(nexusDB));
+    private readonly EmailSender _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
 
     public async Task ProcessMessageAsync(ServiceBusReceivedMessage message, ServiceBusMessageActions messageActions)
     {
@@ -67,7 +70,8 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
                 // Get the maximum number of short notifications to send
                 // short notifications include the actual appointment date and time
                 // long notifications include the dates and the number of appointments on that date
-                int maxShortNotifications = _config.GetValue<int>("MaxShortNotificationsCount");
+                int maxShortNotifications = _config.GetValue<int>("Notifications:MaxShortNotificationsCount");
+                maxShortNotifications = maxShortNotifications > 0 ? maxShortNotifications : 4;
                 if (appointments.Count <= maxShortNotifications)
                 {
                     _logger.LogInformation($"[{_tracer.Id}] Sending short SMS notifications for {appointments.Count} appointments for location id: {locationId}.");
@@ -76,7 +80,8 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
                 else
                 {
                     _logger.LogInformation($"[{_tracer.Id}] Sending SMS notifications for all {appointments.Count} appointments.");
-                    SendAllAppointmentSmsNotifications(appointments, notificationList);
+                    int maxTextLength = _config.GetValue<int>("Notifications:MaxTextLength");
+                    SendAllAppointmentSmsNotifications(appointments, notificationList, maxTextLength);
                 }
             }
 
@@ -114,28 +119,97 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
     }
 
     // Send short SMS notifications to users for a small list of appointments
-    private static void SendShortListSmSNotifications(List<Appointment> appointments, List<UserNotifications> notificationList)
+    private void SendShortListSmSNotifications(List<Appointment> appointments, List<UserNotifications> notificationList)
     {
-        string smsMsg = "Nexus interview found:\n";
-        smsMsg += string.Join("\n", appointments.Select(a => a.Date.ToString("ddd M/d/yy h:mm tt")));
-        smsMsg += "\n{appointments.First().LocationName} ({appointments.First().LocationDescription})";
+        var stopWatch = new Stopwatch();
+        stopWatch.Start();
+        string plural = appointments.Count > 1 ? "s" : "";
+        string smsSubject = $"Nexus interview{plural} found";
+        string smsMsg = string.Join("\n", appointments.Select(a => a.Date.ToString("ddd M/d h:mm tt"))) + "\n";
+        smsMsg += $"{notificationList.First().LocationName} ({notificationList.First().LocationDescription})".Trim();
+        int smsMessageCount = 0;
 
         foreach (var user in notificationList)
         {
             // Send SMS notification
-            SendSms(user.Phone, smsMsg);
+            if (SendSms(user.Phone, user.PhoneProviderId, smsSubject, smsMsg)) {
+                smsMessageCount++;
+                if (smsMessageCount % 25 == 0) {
+                    Thread.Sleep(1000);
+                }
+            }
         }
+        stopWatch.Stop();
+        _logger.LogInformation($"[{_tracer.Id}] Sent SMS notifications for {appointments.Count} appointments to {notificationList.Count} users.");
+        _logger.LogInformation($"[{_tracer.Id}] {smsMessageCount} SMS messages sent in {stopWatch.ElapsedMilliseconds} ms");
     }
 
-    private static void SendAllAppointmentSmsNotifications(List<Appointment> appointments, List<UserNotifications> notificationList)
+    private void SendAllAppointmentSmsNotifications(List<Appointment> appointments, List<UserNotifications> notificationList
+        , int maxTextLength)
     {
+        var stopWatch = new Stopwatch();
+        stopWatch.Start();
+        var smsSubject = "Nexus interviews found";
+        string location = $"{notificationList.First().LocationName} ({notificationList.First().LocationDescription})".Trim();
+        var smsMsg = new StringBuilder();
+        var groupedAppointments = appointments.GroupBy(a => a.Date.Date);
+        maxTextLength = maxTextLength > 0 ? maxTextLength : 160;
+        bool beginNewMessage = true;
+        int count = 0;
+        int smsMessageCount = 0;
 
+        foreach (var group in groupedAppointments)
+        {
+            if (beginNewMessage) {
+                smsMsg.Clear();
+                smsMsg.AppendLine(location);
+                beginNewMessage = false;
+            }
+            var earliestTime = group.Min(a => a.Date.TimeOfDay);
+            string plural = group.Count() > 1 ? "s" : "";
+            smsMsg.AppendLine($"{group.Key:ddd M/d}: {group.Count()} opening{plural} starting at {earliestTime:h:mm tt}");
+            beginNewMessage = (smsMsg.Length > maxTextLength) || (count++ == groupedAppointments.Count() - 1);
+            if (beginNewMessage)
+            {
+                foreach (var user in notificationList)
+                {
+                    if (SendSms(user.Phone, user.PhoneProviderId, smsSubject, smsMsg.ToString())) {
+                        smsMessageCount++;
+                        if (smsMessageCount % 25 == 0) {
+                            Thread.Sleep(1000);
+                        }
+                    }
+                }
+            }
+        }
+        stopWatch.Stop();
+        _logger.LogInformation($"[{_tracer.Id}] Sent SMS notifications for all {appointments.Count} appointments to {notificationList.Count} users.");
+        _logger.LogInformation($"[{_tracer.Id}] {smsMessageCount} SMS messages sent in {stopWatch.ElapsedMilliseconds} ms");
     }
 
     // Send SMS notification
-    private static void SendSms(string? phone, string smsMsg)
+    private bool SendSms(string? phone, int phoneProviderId, string smsSubject, string smsBody)
     {
         // Send SMS notification
-        
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            return false;
+        }
+        string phoneEmail = GetPhoneEmail(phone, phoneProviderId);
+
+        // Send the SMS notification
+        _emailSender.SendPlainEmail(phoneEmail, string.Empty, smsSubject, smsBody);
+        return true;
+    }
+
+    // Get the email address of the phone number to receive SMS from the phone provider
+    private static string GetPhoneEmail(string phone, int phoneProviderId)
+    {
+        return phoneProviderId switch
+        {
+            // T-Mobile
+            1 => phone + "@tmomail.net",
+            _ => throw new Exception($"Phone provider id {phoneProviderId} is not supported."),
+        };
     }
 }
