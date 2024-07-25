@@ -45,10 +45,10 @@ public class NexusDB
         {
             users.Add(new UserNotifications
             {
-                UserId = reader["UserId"].ToString(),
-                Email = reader["Email"].ToString(),
-                AlternateEmail = reader["AlternateEmail"].ToString(),
-                Phone = reader["Phone"].ToString(),
+                UserId = Convert.ToInt32(reader["UserId"]),
+                Email = reader["Email"]?.ToString() ?? string.Empty,
+                AlternateEmail = reader["AlternateEmail"]?.ToString() ?? string.Empty,
+                Phone = reader["Phone"]?.ToString() ?? string.Empty,
                 PhoneProviderId = Convert.ToInt32(reader["PhoneProviderId"]),
                 FirstName = reader["FirstName"]?.ToString() ?? string.Empty,
                 LastName = reader["LastName"]?.ToString() ?? string.Empty,
@@ -57,8 +57,8 @@ public class NexusDB
                 EmailConfirmed = Convert.ToBoolean(reader["EmailConfirmed"]),
                 AlternateEmailConfirmed = Convert.ToBoolean(reader["AlternateEmailConfirmed"]),
                 PhoneConfirmed = Convert.ToBoolean(reader["PhoneConfirmed"]),
-                LocationId = reader["LocationId"].ToString(),
-                LocationName = reader["LocationName"].ToString(),
+                LocationId = Convert.ToInt32(reader["LocationId"]),
+                LocationName = reader["LocationName"]?.ToString() ?? string.Empty,
                 LocationDescription = reader["LocationDescription"].ToString()
             });
         }
