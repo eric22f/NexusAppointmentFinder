@@ -48,8 +48,7 @@ public class NexusAppointmentService
         _toDate = _fromDate.AddDays(_totalDays);
         _nexusAppointmentsApiUrl = _configuration["NexusApi:BaseUrl"] + _configuration["NexusApi:QueryParams"]
             ?? "https://ttp.cbp.dhs.gov/schedulerapi/locations/[LOCATION_ID]/slots?startTimestamp=[START_DATE]&endTimestamp=[END_DATE]";
-        _logger.LogInformation("[{_traceId}] NexusAppointmentService initialized");
-        _logger.LogInformation($"[{_traceId}] NexusAppointmentsApiUrl: {_nexusAppointmentsApiUrl}");
+        _logger.LogInformation($"[{_traceId}] NexusAppointmentService initialized: {_nexusAppointmentsApiUrl}");
     }
 
     // This method fetches appointment data from the Nexus Appointments API
