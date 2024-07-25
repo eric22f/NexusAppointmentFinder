@@ -25,6 +25,8 @@ public class NexusAppointmentServiceIntegrationTests
     }
 
     [Fact]
+    // Test the NexusAppointmentService.ProcessAppointments method
+    // This will create new service bus messages if enabled in local.test.settings.json
     public async Task GetAppointmentAsync_ReturnsAppointment()
     {
         // Arrange
