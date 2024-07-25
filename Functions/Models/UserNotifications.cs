@@ -6,8 +6,8 @@ namespace NexusAzureFunctions.Models;
 [DebuggerDisplay("UserNotifications: {ToString()}")]
 public class UserNotifications
 {
-    public string? UserId { get; set; }
-    public string? Email { get; set; }
+    public int UserId { get; set; }
+    public required string Email { get; set; }
     public string? AlternateEmail { get; set; }
     public string? Phone { get; set; }
     public int PhoneProviderId { get; set; }
@@ -18,8 +18,8 @@ public class UserNotifications
     public bool EmailConfirmed { get; set; }
     public bool AlternateEmailConfirmed { get; set; }
     public bool PhoneConfirmed { get; set; }
-    public string? LocationId { get; set; }
-    public string? LocationName { get; set; }
+    public int LocationId { get; set; }
+    public required string LocationName { get; set; }
     public string? LocationDescription { get; set; }
 
     public string GetFullName()
