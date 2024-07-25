@@ -193,19 +193,17 @@ public class NexusAppointmentService
     {
         if (_configuration["ServiceBus:Enabled"] == "true")
         {
-            // Send new appointments to Service Bus
-            var stopwatch = Stopwatch.StartNew();
             var serviceBus = ServiceBusCreator.CreateServiceBusClient(_configuration);
-            var messageBody = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(newAppointments));
-            var plural = newAppointments.Count > 1 ? "s" : "";
-            var message = new Message(messageBody)
+            var stopwatch = Stopwatch.StartNew();
+
+            var chunkedAppointments = ChunkAppointments(newAppointments, 128 * 1024); // 128 KB (max message size)
+
+            for (int i = 0; i < chunkedAppointments.Count; i++)
             {
-                MessageId =_traceId,
-                ContentType = "application/json",
-                CorrelationId = Guid.NewGuid().ToString(),
-                Label = $"{newAppointments.Count} new appointment{plural}"
-            };
-            await serviceBus.SendAsync(message);
+                var chunk = chunkedAppointments[i];
+                await SendMessageAsync(serviceBus, chunk, i, chunkedAppointments.Count);
+            }
+ 
             stopwatch.Stop();
             _logger.LogTrace($"[{_traceId}] Sending {newAppointments.Count} new appointments to Service Bus took: {stopwatch.ElapsedMilliseconds} ms");
         }
@@ -214,6 +212,53 @@ public class NexusAppointmentService
             _logger.LogInformation($"[{_traceId}] ServiceBus is disabled. Not sending new available appointments.");
         }
     }
+
+    // Split appointments into chunks to send to Service Bus
+    // to prevent exceeding message size limits
+    private static List<List<Appointment>> ChunkAppointments(List<Appointment> appointments, int maxMessageSize)
+    {
+        var chunkedAppointments = new List<List<Appointment>>();
+        var currentChunk = new List<Appointment>();
+        var currentChunkSize = 0;
+
+        foreach (var appointment in appointments)
+        {
+            var appointmentSize = Encoding.UTF8.GetByteCount(JsonConvert.SerializeObject(appointment));
+            if (currentChunkSize + appointmentSize > maxMessageSize && currentChunk.Count > 0)
+            {
+                chunkedAppointments.Add(currentChunk);
+                currentChunk = new List<Appointment>();
+                currentChunkSize = 0;
+            }
+            currentChunk.Add(appointment);
+            currentChunkSize += appointmentSize;
+        }
+
+        if (currentChunk.Count > 0)
+        {
+            chunkedAppointments.Add(currentChunk);
+        }
+
+        return chunkedAppointments;
+    }
+
+    // Send message to Service Bus
+    private async Task SendMessageAsync(QueueClient serviceBus, List<Appointment> chunk, int index, int total)
+    {
+        var messageBody = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(chunk));
+        var plural = chunk.Count > 1 ? "s" : "";
+        var indexStr = total > 1 ? $"-({index + 1}/{total})" : "";
+        var message = new Message(messageBody)
+        {
+            MessageId = _traceId + indexStr,
+            ContentType = "application/json",
+            CorrelationId = _traceId,
+            Label = $"{chunk.Count} new appointment{plural}"
+        };
+
+        await serviceBus.SendAsync(message);
+    }
+
 
     // Cache the all open appointments if the cache client is available
     private void CacheOpenAppointments(List<Appointment> openAppointments)

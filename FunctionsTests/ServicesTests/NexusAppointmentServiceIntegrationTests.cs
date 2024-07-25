@@ -30,7 +30,7 @@ public class NexusAppointmentServiceIntegrationTests
     public async Task GetAppointmentAsync_ReturnsAppointment()
     {
         // Arrange
-        var expectedAppointment = CreateHttpAppointmentsList(1);
+        var expectedAppointment = CreateHttpAppointmentsList(3);
 
         var httpClientMock = GetMockHttpClient(expectedAppointment);
 
@@ -68,6 +68,26 @@ public class NexusAppointmentServiceIntegrationTests
             case 1:
                 // Single appointment
                 appointments.Add(new HttpAppointment { active = 1, total = 3, pending = 0, conflicts = 0, duration = 10, timestamp = DateTime.Now.ToString(), remote = false });
+                break;
+            case 2:
+                // Multiple appointments
+                appointments.Add(new HttpAppointment { active = 1, total = 3, pending = 0, conflicts = 0, duration = 10, timestamp = DateTime.Now.AddDays(1).ToString(), remote = false });
+                appointments.Add(new HttpAppointment { active = 2, total = 3, pending = 0, conflicts = 0, duration = 10, timestamp = DateTime.Now.AddDays(2).ToString(), remote = false });
+                appointments.Add(new HttpAppointment { active = 3, total = 3, pending = 0, conflicts = 0, duration = 10, timestamp = DateTime.Now.AddDays(4).ToString(), remote = false });
+                appointments.Add(new HttpAppointment { active = 1, total = 3, pending = 0, conflicts = 0, duration = 10, timestamp = DateTime.Now.AddDays(7).ToString(), remote = false });
+                break;
+            case 3:
+                // For 180 days every day has a consecutive appointment every 10 minutes with an opening starting 8 am to 6 pm
+                var firstAppointmentDateTime = DateTime.Today.AddDays(1).AddHours(8);
+                for (int i = 0; i < 180; i++)
+                {
+                    var appointmentDateTime = firstAppointmentDateTime.AddDays(i);
+                    while (appointmentDateTime.Hour < 18)
+                    {
+                        appointments.Add(new HttpAppointment { active = 1, total = 3, pending = 0, conflicts = 0, duration = 10, timestamp = appointmentDateTime.ToString(), remote = false });
+                        appointmentDateTime = appointmentDateTime.AddMinutes(10);
+                    }
+                }
                 break;
             default:
                 throw new Exception("Invalid scenerioId");
