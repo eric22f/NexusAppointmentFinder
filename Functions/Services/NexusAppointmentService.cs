@@ -203,7 +203,7 @@ public class NexusAppointmentService
                 MessageId =_traceId,
                 ContentType = "application/json",
                 CorrelationId = Guid.NewGuid().ToString(),
-                Label = $"{newAppointments.Count} new appointment{plural} for location ID: {_locationId}"
+                Label = $"{newAppointments.Count} new appointment{plural}"
             };
             await serviceBus.SendAsync(message);
             stopwatch.Stop();
