@@ -6,6 +6,7 @@ using System.Text;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using NexusAzureFunctions.Models;
+using Azure.Messaging.ServiceBus;
 
 namespace NexusAzureFunctions.Services;
 
@@ -192,10 +193,18 @@ public class NexusAppointmentService
     {
         if (_configuration["ServiceBus:Enabled"] == "true")
         {
-            // Send open appointments to Service Bus
+            // Send new appointments to Service Bus
             var stopwatch = Stopwatch.StartNew();
             var serviceBus = ServiceBusCreator.CreateServiceBusClient(_configuration);
-            var message = new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(newAppointments)));
+            var messageBody = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(newAppointments));
+            var plural = newAppointments.Count > 1 ? "s" : "";
+            var message = new Message(messageBody)
+            {
+                MessageId =_traceId,
+                ContentType = "application/json",
+                CorrelationId = Guid.NewGuid().ToString(),
+                Label = $"{newAppointments.Count} new appointment{plural} for location ID: {_locationId}"
+            };
             await serviceBus.SendAsync(message);
             stopwatch.Stop();
             _logger.LogTrace($"[{_traceId}] Sending {newAppointments.Count} new appointments to Service Bus took: {stopwatch.ElapsedMilliseconds} ms");
