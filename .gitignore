@@ -44,6 +44,9 @@ ScaffoldingReadMe.txt
 local.settings.json
 local.test.settings.json
 
+# Azure Functions VS Code debugging
+__azurite*
+
 # Azure Function application logs
 *.log
 
