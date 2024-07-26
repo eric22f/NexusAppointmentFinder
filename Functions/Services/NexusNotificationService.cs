@@ -91,7 +91,6 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
             // Get the time slot for the first appointment
             var timeSlot = appointments.First().Date.TimeOfDay;
 
-
             // Complete the message
             await messageActions.CompleteMessageAsync(message);
         }
@@ -123,7 +122,8 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
     {
         var stopWatch = new Stopwatch();
         stopWatch.Start();
-        string plural = appointments.Count > 1 ? "s" : "";
+        int totalOpenings = appointments.Sum(a => a.Openings);
+        string plural = totalOpenings > 1 ? "s" : "";
         string smsSubject = $"Nexus interview{plural} found";
         string smsMsg = string.Join("\n", appointments.Select(a => a.Date.ToString("ddd M/d h:mm tt"))) + "\n";
         smsMsg += $"{notificationList.First().LocationName} ({notificationList.First().LocationDescription})".Trim();
@@ -140,7 +140,7 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
             }
         }
         stopWatch.Stop();
-        _logger.LogInformation($"[{_tracer.Id}] Sent SMS notifications for {appointments.Count} appointments to {notificationList.Count} users.");
+        _logger.LogInformation($"[{_tracer.Id}] Sent SMS notifications for {totalOpenings} openings on {appointments.Count} time slots to {notificationList.Count} users.");
         _logger.LogInformation($"[{_tracer.Id}] {smsMessageCount} SMS messages sent in {stopWatch.ElapsedMilliseconds} ms");
     }
 
@@ -157,6 +157,7 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
         bool beginNewMessage = true;
         int count = 0;
         int smsMessageCount = 0;
+        int totalOpenings = 0;
 
         foreach (var group in groupedAppointments)
         {
@@ -165,9 +166,11 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
                 smsMsg.AppendLine(location);
                 beginNewMessage = false;
             }
-            var earliestTime = group.Min(a => a.Date.TimeOfDay);
-            string plural = group.Count() > 1 ? "s" : "";
-            smsMsg.AppendLine($"{group.Key:ddd M/d}: {group.Count()} opening{plural} starting at {earliestTime:h:mm tt}");
+            var earliestTime = DateTime.Today.Add(group.Min(a => a.Date.TimeOfDay));
+            int openings = group.Sum(a => a.Openings);
+            totalOpenings += openings;
+            string plural = openings > 1 ? "s" : "";
+            smsMsg.AppendLine($"{group.Key:ddd M/d}: {openings} opening{plural} starting at {earliestTime:h:mm tt}");
             beginNewMessage = (smsMsg.Length > maxTextLength) || (count++ == groupedAppointments.Count() - 1);
             if (beginNewMessage)
             {
@@ -183,7 +186,7 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
             }
         }
         stopWatch.Stop();
-        _logger.LogInformation($"[{_tracer.Id}] Sent SMS notifications for all {appointments.Count} appointments to {notificationList.Count} users.");
+        _logger.LogInformation($"[{_tracer.Id}] Sent SMS notifications for {totalOpenings} openings on {appointments.Count} time slots to {notificationList.Count} users.");
         _logger.LogInformation($"[{_tracer.Id}] {smsMessageCount} SMS messages sent in {stopWatch.ElapsedMilliseconds} ms");
     }
 
