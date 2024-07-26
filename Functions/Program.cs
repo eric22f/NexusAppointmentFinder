@@ -36,6 +36,7 @@ var host = new HostBuilder()
         services.AddTransient<NexusNotificationService>();
         services.AddScoped<Tracer>();
         services.AddScoped<NexusDB>();
+        services.AddScoped<EmailSender>();
 
         // Add Configuration
         services.AddSingleton<IConfiguration>(sp => context.Configuration);
