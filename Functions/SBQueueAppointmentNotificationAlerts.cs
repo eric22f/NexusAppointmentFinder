@@ -15,7 +15,7 @@ public class SBQueueAppointmentNotificationAlerts(NexusNotificationService notif
 
     [Function("TriggerNexusAppointmentNotificationAlerts")]
     public async Task Run(
-        [ServiceBusTrigger("ServiceBus:QueueName", Connection = "ServiceBus:ServiceBusConnectionString")]
+        [ServiceBusTrigger("nexus-api-queue-dev", Connection = "ServiceBusConnectionString")]
         ServiceBusReceivedMessage message,
         ServiceBusMessageActions messageActions)
     {
