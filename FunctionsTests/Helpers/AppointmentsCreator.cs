@@ -53,13 +53,16 @@ public static class AppointmentsCreator
                 }
                 break;
             case 7:
-                // Every day has a consecutive appointment every 10 minutes with an opening starting 8 am to 6 pm
+                // Every day has a consecutive appointment every 10 minutes with an opening starting between 8 am to 6 pm
                 for (int i = 0; i < endDate.Subtract(startDate).Days; i++)
                 {
                     var appointmentDateTime = firstAppointmentDateTime.AddDays(i);
                     while (appointmentDateTime.Hour < 18)
                     {
-                        result.Add(new Appointment { Date = appointmentDateTime, LocationId = locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
+                        // Start appointments at varied times based on date
+                        if (appointmentDateTime.Hour >= 8 + appointmentDateTime.Day % 6) {
+                            result.Add(new Appointment { Date = appointmentDateTime, LocationId = locationId, Openings = 1, TotalSlots = 3, Pending = 0, Conflicts = 0, Duration = 10 });
+                        }
                         appointmentDateTime = appointmentDateTime.AddMinutes(10);
                     }
                 }

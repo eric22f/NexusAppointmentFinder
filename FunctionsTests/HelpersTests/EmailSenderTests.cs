@@ -20,7 +20,7 @@ public class EmailSenderTests
             .AddJsonFile("local.test.settings.json", optional: true, reloadOnChange: true);
         _config = configurationBuilder.Build();
 
-        string unitTestsEnabled = _config["Smtp:EnableEmailUnitTests"] ?? throw new ConfigurationErrorsException("Missing configuration setting for 'Smtp:EnableEmailUnitTests'");
+        string unitTestsEnabled = _config["TestFlags:EnableEmailTests"] ?? throw new ConfigurationErrorsException("Missing configuration setting for TestFlags:EnableEmailTests'");
         _enableUnitTests = bool.Parse(unitTestsEnabled);
         _toEmailAddress = _config["Smtp:TestingToEmail"] ?? throw new ConfigurationErrorsException("Missing configuration setting for 'Smtp:TestingToEmail'");
         _toFullName = _config["Smtp:TestingToFullName"] ?? throw new ConfigurationErrorsException("Missing configuration setting for 'Smtp:TestingToFullName'");
