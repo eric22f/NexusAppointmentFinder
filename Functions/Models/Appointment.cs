@@ -17,7 +17,7 @@ public class Appointment
     public string AppointmentKey => $"{LocationId}-{Date.ToString("yyyy-MM-ddTHH:mm")}";
     public static string GetAppointmentDetails(Appointment appointment)
     {
-        return $"Location: {appointment.LocationId}, Date: {appointment.Date.ToString("yyyy-MM-ddTHH:mm")}, Openings: {appointment.Openings}, TotalSlots: {appointment.TotalSlots}, Pending: {appointment.Pending}, Conflicts: {appointment.Conflicts}, Duration: {appointment.Duration}";
+        return $"Location: {appointment.LocationId} Date: {appointment.Date:ddd M/d/yy h:mm tt} Openings: {appointment.Openings} TotalSlots: {appointment.TotalSlots} Pending: {appointment.Pending} Conflicts: {appointment.Conflicts} Duration: {appointment.Duration} min";
     }
     // Override the Equals method
     public override bool Equals(object? obj)

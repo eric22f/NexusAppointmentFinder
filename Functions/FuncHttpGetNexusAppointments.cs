@@ -29,15 +29,9 @@ public class FuncHttpGetNexusAppointments(ILogger<FuncHttpGetNexusAppointments> 
             { 
                 return new BadRequestObjectResult($"An error occurred processing appointments. (Reference trace log id: {_tracer.Id})");
             }
-            if (count == 0)
-            {
-                return new OkObjectResult($"No appointments available for the next {days} days as of {DateTime.Now:M-d-yyyy h:mm:ss tt}.");
-            }
-            if (count == 1)
-            {
-                return new OkObjectResult($"One Appointment found within the next {days} days:\n {string.Join("\n", availableAppointments.Select(a => a.ToString()))}");
-            }
-            return new OkObjectResult($"{count} appointments found within the next {days} days:\n {availableAppointments.Count}.\n{string.Join("\n", availableAppointments.Select(a => a.ToString()))}");
+            string plural = count == 1 ? "" : "s";
+            string display = count == 0 ? "" : $"\n{string.Join("\n", availableAppointments.Select(a => a.ToString()))}";
+            return new OkObjectResult($"{count} appointment{plural} found within the next {days} days as of {DateTime.Now:M-d-yyyy h:mm:ss tt}.{display}");
         }
         catch (Exception ex)
         {
