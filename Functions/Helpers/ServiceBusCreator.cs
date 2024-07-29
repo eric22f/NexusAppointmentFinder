@@ -9,9 +9,15 @@ public static class ServiceBusCreator
     {
         connectionString = string.IsNullOrWhiteSpace(connectionString) ?
             configuration["ServiceBusConnectionString"] + "" : connectionString;
+        if (string.IsNullOrWhiteSpace(connectionString)){
+            connectionString = configuration["Values:ServiceBusConnectionString"] + "";
+        }
 
         queueName = string.IsNullOrWhiteSpace(queueName) ?
             configuration["ServiceBusQueueName"] + "" : queueName;
+        if (string.IsNullOrWhiteSpace(queueName)) {
+            queueName = configuration["Values:ServiceBusQueueName"] + "";
+        }
 
         return new QueueClient(connectionString, queueName);
     }

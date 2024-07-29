@@ -26,8 +26,30 @@ public class NexusAppointmentServiceIntegrationTests
 
     [Fact]
     // Test the NexusAppointmentService.ProcessAppointments method
-    // This will create new service bus messages if enabled in local.test.settings.json
-    public async Task GetAppointmentAsync_ReturnsAppointment()
+    // This will create one new service bus messages if enabled in local.test.settings.json
+    public async Task GetAppointmentAsync_ReceivesSingleAppointment_SubmitsAppointment()
+    {
+        // Arrange
+        var expectedAppointment = CreateHttpAppointmentsList(1);
+
+        var httpClientMock = GetMockHttpClient(expectedAppointment);
+
+        var appointmentService = CreateNewAppointmentService(httpClientMock);
+
+        // Act
+        var result = await appointmentService.ProcessAppointments();
+
+        // Assert
+        Assert.True(appointmentService.IsProcessAppointmentsSuccess);
+        Assert.Equal(result.Count, expectedAppointment.Count);
+        Assert.Equal(expectedAppointment[0].active, result[0].Openings);
+        Assert.Equal(expectedAppointment[0].timestamp, result[0].Date.ToString("yyyy-MM-ddTHH:mm"));
+    }
+
+    [Fact]
+    // Test the NexusAppointmentService.ProcessAppointments method
+    // This will create new 300+ service bus messages if enabled in local.test.settings.json
+    public async Task GetAppointmentAsync_ReceivesAppointments_SubmitsAppointments()
     {
         // Arrange
         var expectedAppointment = CreateHttpAppointmentsList(3);
