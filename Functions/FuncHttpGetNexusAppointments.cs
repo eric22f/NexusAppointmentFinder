@@ -31,6 +31,7 @@ public class FuncHttpGetNexusAppointments(ILogger<FuncHttpGetNexusAppointments> 
             }
             string plural = count == 1 ? "" : "s";
             string display = count == 0 ? "" : $"\n{string.Join("\n", availableAppointments.Select(a => a.ToString()))}";
+            string number = NumbersToWords.ConvertToWords(count);
             return new OkObjectResult($"{count} appointment{plural} found within the next {days} days as of {DateTime.Now:M-d-yyyy h:mm:ss tt}.{display}");
         }
         catch (Exception ex)
