@@ -89,7 +89,7 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
 
     private AppointmentCacheSqlDatabase CreateAppointmentCache()
     {
-        return new AppointmentCacheSqlDatabase(_config);
+        return new AppointmentCacheSqlDatabase(_config, _logger, new Tracer());
     }
 
     private void ClearCache()

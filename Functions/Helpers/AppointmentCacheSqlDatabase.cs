@@ -3,18 +3,24 @@ using System.Data;
 using NexusAzureFunctions.Models;
 using Microsoft.Extensions.Configuration;
 using System.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace NexusAzureFunctions.Helpers;
 
 public class AppointmentCacheSqlDatabase : AppointmentCacheBase
 {
     private readonly string _connectionString;
+    private readonly ILogger<AppointmentCacheSqlDatabase> _logger;
+    private readonly Tracer _tracer;
 
-    public AppointmentCacheSqlDatabase(IConfiguration configuration)
+    public AppointmentCacheSqlDatabase(IConfiguration configuration, ILogger<AppointmentCacheSqlDatabase> logger,
+        Tracer tracer)
     {
         var config = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _connectionString = config["SqlDatabase:SqlConnectionString"] ?? 
             throw new ConfigurationErrorsException("Configuration setting 'SqlDatabase:SqlConnectionString' not found.");
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _tracer = tracer ?? throw new ArgumentNullException(nameof(tracer));
     }
 
     // Add the appointment to the database
@@ -30,9 +36,10 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
     protected override List<Appointment> GetCachedAppointments(int locationId, DateTime startDate, DateTime endDate)
     {
         List<Appointment> appointments = [];
-        int retry = 1;
+        int retry = 3;
+        int retryCount = 0;
 
-        while (retry >= 0)
+        while (retryCount < retry)
         {
             try
             {
@@ -62,8 +69,9 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
                 // Done
                 break;
             }
-            catch (TimeoutException) when (retry-- > 0)
+            catch (TimeoutException) when (retryCount++ < retry)
             {
+                _logger.LogWarning($"{_tracer.Id} Timeout exception occurred. Retry attempt {retryCount} of {retry}...");
                 continue;
             }
         }
@@ -76,9 +84,10 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
     // Clear any existing appointments for the location by date range
     private void ClearAppointmentsByDate(int locationId, DateTime startDate, DateTime endDate)
     {
-        int retry = 1;
+        int retry = 3;
+        int retryCount = 0;
 
-        while (retry >= 0)
+        while (retryCount < retry)
         {
             try
             {
@@ -101,8 +110,9 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
                 // Done
                 break;
             }
-            catch (TimeoutException) when (retry-- > 0)
+            catch (TimeoutException) when (retryCount++ < retry)
             {
+                _logger.LogWarning($"{_tracer.Id} Timeout exception occurred. Retry attempt {retryCount} of {retry}...");
                 continue;
             }
         }

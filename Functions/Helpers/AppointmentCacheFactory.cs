@@ -30,7 +30,7 @@ public class AppointmentCacheFactory(ILoggerFactory loggerFactory, Tracer tracer
         try
         {
             // Create new Database cache client
-            return new AppointmentCacheSqlDatabase(_config);
+            return new AppointmentCacheSqlDatabase(_config, _loggerFactory.CreateLogger<AppointmentCacheSqlDatabase>(), tracer);
         }
         catch (Exception e)
         {
