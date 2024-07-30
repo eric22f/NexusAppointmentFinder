@@ -1,4 +1,4 @@
-# NexusAppointmentFinder
+# Nexus Appointment Finder
 
 Get notifications when a Nexus appointment becomes available.
 
@@ -46,7 +46,7 @@ NexusAppointmentFinder is an Azure Functions project designed to notify users wh
    func start
    ```
 
-## Database Deployment with Flyway
+## Database Deployment with Flyway by Redgate
 
 Flyway is used to manage and deploy the database schema changes.
 
@@ -123,8 +123,25 @@ Flyway is used to manage and deploy the database schema changes.
    az functionapp create --resource-group <ResourceGroupName> --consumption-plan-location <Location> --runtime dotnet --functions-version 3 --name <AppName> --storage-account <StorageAccountName>
    ```
 
-3. **Create SQL Server database:**
- - *In Process*: Updating project to include database deployment.
+3. **Create SQL Server database in Azure:**
+
+  - **Log in to Azure Portal**:
+     - Go to [Azure Portal](https://portal.azure.com/) and sign in.
+
+  - **Create a SQL Server**:
+     - Search for "SQL Server" and select "Create".
+     - Enter server name, admin username, and password.
+
+  - **Create a SQL Database**:
+     - Search for "SQL Database" and click "Create".
+     - Select your resource group and server.
+     - Enter a database name and configure settings.
+
+  - **Review and Create**:
+     - Review the details and click "Create".
+
+  - **Configure Firewall**:
+     - Go to your SQL Server and configure the firewall settings to allow access.
 
 4. **Deploy the functions:**
    ```sh
