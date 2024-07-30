@@ -69,9 +69,10 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
                 // Done
                 break;
             }
-            catch (TimeoutException) when (retryCount++ < retry)
+            catch (SqlException ex) when (ex.Number == -2 && retryCount++ < retry)
             {
                 _logger.LogWarning($"{_tracer.Id} Timeout exception occurred. Retry attempt {retryCount} of {retry}...");
+                Thread.Sleep(1000);
                 continue;
             }
         }
@@ -110,9 +111,10 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
                 // Done
                 break;
             }
-            catch (TimeoutException) when (retryCount++ < retry)
+            catch (SqlException ex) when (ex.Number == -2 && retryCount++ < retry)
             {
                 _logger.LogWarning($"{_tracer.Id} Timeout exception occurred. Retry attempt {retryCount} of {retry}...");
+                Thread.Sleep(1000);
                 continue;
             }
         }
