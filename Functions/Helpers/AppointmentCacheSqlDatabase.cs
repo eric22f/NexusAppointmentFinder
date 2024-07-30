@@ -44,7 +44,9 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
             try
             {
                 using SqlConnection connection = new(_connectionString);
-                string query = "SELECT * FROM NexusAppointmentsAvailability WHERE LocationId = @LocationId"
+                string query = "SELECT AppointmentDate, LocationId, Openings, TotalSlots ,Pending"
+                             + ", Conflicts, Duration"
+                             + " FROM NexusAppointmentsAvailability WHERE LocationId = @LocationId"
                              + " AND AppointmentDate >= @StartDate AND AppointmentDate <= @EndDate";
                 SqlCommand command = new(query, connection);
                 command.Parameters.AddWithValue("@LocationId", locationId);
@@ -57,13 +59,13 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
                 {
                     appointments.Add(new Appointment
                     {
-                        Date = reader.GetDateTime(1),
-                        LocationId = reader.GetInt32(2),
-                        Openings = reader.GetInt16(3),
-                        TotalSlots = reader.GetInt16(4),
-                        Pending = reader.GetInt16(5),
-                        Conflicts = reader.GetInt16(6),
-                        Duration = reader.GetInt16(7)
+                        Date = (DateTime)reader["AppointmentDate"],
+                        LocationId = Convert.ToInt32(reader["LocationId"]),
+                        Openings = Convert.ToInt32(reader["Openings"]),
+                        TotalSlots = Convert.ToInt32(reader["TotalSlots"]),
+                        Pending = Convert.ToInt32(reader["Pending"]),
+                        Conflicts = Convert.ToInt32(reader["Conflicts"]),
+                        Duration = Convert.ToInt32(reader["Duration"])
                     });
                 }
                 // Done
@@ -71,8 +73,14 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
             }
             catch (SqlException ex) when (ex.Number == -2 && retryCount++ < retry)
             {
-                _logger.LogWarning($"{_tracer.Id} Timeout exception occurred. Retry attempt {retryCount} of {retry}...");
-                Thread.Sleep(1000);
+                _logger.LogWarning($"[{_tracer.Id}] Timeout exception occurred. Retry attempt {retryCount} of {retry}...");
+                Thread.Sleep(2000);
+                continue;
+            }
+            catch (InvalidOperationException) when (retryCount++ < retry)
+            {
+                _logger.LogWarning($"[{_tracer.Id}] Invalid Operation exception occurred. Retry attempt {retryCount} of {retry}...");
+                Thread.Sleep(2000);
                 continue;
             }
         }
@@ -113,8 +121,14 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
             }
             catch (SqlException ex) when (ex.Number == -2 && retryCount++ < retry)
             {
-                _logger.LogWarning($"{_tracer.Id} Timeout exception occurred. Retry attempt {retryCount} of {retry}...");
-                Thread.Sleep(1000);
+                _logger.LogWarning($"[{_tracer.Id}] Timeout exception occurred. Retry attempt {retryCount} of {retry}...");
+                Thread.Sleep(2000);
+                continue;
+            }
+            catch (InvalidOperationException) when (retryCount++ < retry)
+            {
+                _logger.LogWarning($"[{_tracer.Id}] Invalid Operation exception occurred. Retry attempt {retryCount} of {retry}...");
+                Thread.Sleep(2000);
                 continue;
             }
         }
