@@ -46,6 +46,70 @@ NexusAppointmentFinder is an Azure Functions project designed to notify users wh
    func start
    ```
 
+## Database Deployment with Flyway
+
+Flyway is used to manage and deploy the database schema changes.
+
+### Setup Flyway
+
+1. **Install Flyway:**
+   - Download and install [Flyway](https://flywaydb.org/download/).
+
+2. **Configure Flyway:**
+   - Navigate to the `Database` directory in your project:
+     ```sh
+     cd Database
+     ```
+
+   - Create a `flyway.conf` file in the `Database` folder with the following content:
+
+     ```ini
+     flyway.url=jdbc:sqlserver://<YourServer>;databaseName=<YourDatabase>
+     flyway.user=<YourUsername>
+     flyway.password=<YourPassword>
+     flyway.locations=filesystem:./migrations
+     ```
+
+   Replace `<YourServer>`, `<YourDatabase>`, `<YourUsername>`, and `<YourPassword>` with your actual database connection details.
+
+### Deploy the Database
+
+1. **Create the Baseline:**
+   - If you are setting up Flyway for the first time on an existing database, run the following command to baseline the current schema:
+
+     ```sh
+     flyway baseline
+     ```
+
+2. **Run Migrations:**
+   - To apply all available migrations and update your database schema, run:
+
+     ```sh
+     flyway migrate
+     ```
+
+3. **Check Migration Status:**
+   - To see the status of all migrations, use:
+
+     ```sh
+     flyway info
+     ```
+
+4. **Undo Last Migration (if needed):**
+   - If you need to undo the last applied migration, run:
+
+     ```sh
+     flyway undo
+     ```
+
+### Adding New Migrations
+
+1. **Create Migration Scripts:**
+   - Add new SQL migration scripts to the `migrations` directory. Use the naming convention `V<version>__<description>.sql` (e.g., `V2__Add_New_Column.sql`).
+
+2. **Apply New Migrations:**
+   - After adding new migration scripts, run the `flyway migrate` command again to apply them to the database.
+
 ## Deployment
 
 1. **Login to Azure:**
