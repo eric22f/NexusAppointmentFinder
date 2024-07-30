@@ -1,0 +1,25 @@
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[NexusPhoneProviders](
+	[PhoneProviderId] [int] NOT NULL,
+	[ProviderName] [varchar](50) NOT NULL,
+	[EmailExtension] [varchar](50) NOT NULL,
+	[IsActive] [bit] NOT NULL
+) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[NexusPhoneProviders] ADD  CONSTRAINT [PK_NexusPhoneProviders] PRIMARY KEY CLUSTERED 
+(
+	[PhoneProviderId] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [Index_NexusPhoneProviders_ProviderName_Unique] ON [dbo].[NexusPhoneProviders]
+(
+	[ProviderName] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[NexusPhoneProviders] ADD  CONSTRAINT [DEFAULT_NexusPhoneProviders_IsActive]  DEFAULT ((1)) FOR [IsActive]
+GO
