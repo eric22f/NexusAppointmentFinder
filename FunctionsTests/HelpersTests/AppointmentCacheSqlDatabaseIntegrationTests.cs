@@ -27,7 +27,7 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
 
         var configurationBuilder = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true);
+            .AddJsonFile("local.test.settings.json", optional: true, reloadOnChange: true);
         _config = configurationBuilder.Build();
 
         var loggerFactory = LoggerFactory.Create(builder =>
