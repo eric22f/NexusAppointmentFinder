@@ -48,6 +48,7 @@ namespace NexusAzureFunctions.Helpers
                 cachedAppointments.Sort((a, b) => a.Date.CompareTo(b.Date));
 
                 var json = JsonSerializer.Serialize(cachedAppointments);
+                blobClient.DeleteIfExists();
                 using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)))
                 {
                     blobClient.Upload(stream, overwrite: true);

@@ -105,9 +105,7 @@ public class AppointmentCacheBlobStorageIntegrationTests
     private void ClearCache()
     {
         BlobClient blobClient = _blobContainerClient.GetBlobClient(_blobStorageName);
-
-        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes("[]"));
-        blobClient.Upload(stream, overwrite: true);
+        blobClient.DeleteIfExists();
     }
 
 #endregion
