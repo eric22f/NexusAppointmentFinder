@@ -3,8 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace NexusAzureFunctions.Helpers;
 
-// This static class is used to create a cache client by first connecting to Redis
-// If Redis is not available then to a database
+// This cache factory is used to create an enabled and valid cache client in this order Redis, SQL Database, then Blob Storage
 public class AppointmentCacheFactory(ILoggerFactory loggerFactory, Tracer tracer, IConfiguration config)
 {
     private readonly ILoggerFactory _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -29,13 +28,25 @@ public class AppointmentCacheFactory(ILoggerFactory loggerFactory, Tracer tracer
         }
         try
         {
-            // Create new Database cache client
-            return new AppointmentCacheSqlDatabase(_config, _loggerFactory.CreateLogger<AppointmentCacheSqlDatabase>(), tracer);
+            if (_config["SqlDatabase:Enabled"] == "true")
+            {
+                // Create new Database cache client
+                return new AppointmentCacheSqlDatabase(_config, _loggerFactory.CreateLogger<AppointmentCacheSqlDatabase>(), tracer);
+            }
         }
         catch (Exception e)
         {
             // Log the exception
             _loggerFactory.CreateLogger<AppointmentCacheBase>().LogError(e, $"[{_traceId}] Unable to create Database cache client.");
+        }
+        try
+        {
+            return new AppointmentCacheBlobStorage(_config, _loggerFactory.CreateLogger<AppointmentCacheBlobStorage>(), tracer);
+        }
+        catch (Exception e)
+        {
+            // Log the exception
+            _loggerFactory.CreateLogger<AppointmentCacheBase>().LogError(e, $"[{_traceId}] Unable to create Blob storage cache client.");
         }
         throw new Exception("Unable to create cache client");
     }

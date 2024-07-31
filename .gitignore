@@ -151,6 +151,9 @@ pipelines/
 bin/
 obj/
 
+# Azure Storage
+__blobstorage__/
+
 # Azure Cloud related
 *.publishsettings
 
