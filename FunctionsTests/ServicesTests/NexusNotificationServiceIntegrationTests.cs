@@ -13,27 +13,21 @@ public class NexusNotificationServiceIntegrationTests
 {
     private readonly IConfiguration _config;
     private readonly ILoggerFactory _loggerFactory;
-    private readonly bool _inlcudeEmails;
 
     public NexusNotificationServiceIntegrationTests()
     {
         _config = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("local.settings.json")
             .AddJsonFile("local.test.settings.json")
             .Build();
 
         _loggerFactory = LoggerFactory.Create(builder => builder.AddConsole())!;
-
-        _inlcudeEmails = _config.GetValue<bool>("TestFlags:EnableEmailTests");
     }
 
     [Fact]
     public async Task ProcessServiceBusMessagesAsync_SendsNotification_NoErrors()
     {
-        if (!_inlcudeEmails)
-        {
-            return;
-        }
         // Arrange
         var mockServiceBusMessage =  CreateServiceBusMessage(1);
         var mockMessageActions = new Mock<ServiceBusMessageActions>();
@@ -62,10 +56,6 @@ public class NexusNotificationServiceIntegrationTests
     [Fact]
     public async Task ProcessServiceBusMessagesAsync_SendsALotNotifications_NoErrors()
     {
-        if (!_inlcudeEmails)
-        {
-            return;
-        }
         // Arrange
         var mockServiceBusMessage =  CreateServiceBusMessage(7);
         var mockMessageActions = new Mock<ServiceBusMessageActions>();
@@ -137,9 +127,11 @@ public class NexusNotificationServiceIntegrationTests
     private NexusNotificationService CreateNewNotificationService(Mock<ILogger<NexusNotificationService>> mockLogger)
     {
         var tracer = new Tracer();
-        var nexusDB = new NexusDB(_config);
+        var nexusBlob = new NexusBlob(_config);
+        var nexusDb = new NexusDB(_config);
+        var nexusManager = new NexusManager(_config, nexusBlob, nexusDb);
         var emailSender = new EmailSender(_config);
-        return new NexusNotificationService(mockLogger.Object, tracer, _config, nexusDB, emailSender);
+        return new NexusNotificationService(mockLogger.Object, tracer, _config, nexusManager, emailSender);
     }
 
     #endregion

@@ -16,13 +16,11 @@ public class AppointmentCacheBlobStorageIntegrationTests
     private readonly ITestOutputHelper _output;
     private readonly ILogger<AppointmentCacheBlobStorage> _logger;
     private readonly IConfiguration _config;
-    private readonly BlobServiceClient _blobServiceClient;
-    private readonly BlobContainerClient _blobContainerClient;
-    private readonly string _blobStorageName;
     private readonly DateTime _startDate;
     private readonly DateTime _endDate;
     private readonly int _locationId = 1234;
     private const int MaxScenerioId = 7;
+    private readonly bool _runBlobStorageTests;
 
     public AppointmentCacheBlobStorageIntegrationTests(ITestOutputHelper output)
     {
@@ -30,6 +28,7 @@ public class AppointmentCacheBlobStorageIntegrationTests
 
         var configurationBuilder = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
             .AddJsonFile("local.test.settings.json", optional: true, reloadOnChange: true);
         _config = configurationBuilder.Build();
 
@@ -40,25 +39,20 @@ public class AppointmentCacheBlobStorageIntegrationTests
         });
         _logger = loggerFactory.CreateLogger<AppointmentCacheBlobStorage>();
 
-        string blobConnectionsString = _config["BlobStorage:BlobStorageConnectionString"] ?? 
-            throw new ConfigurationErrorsException("Configuration setting 'BlobStorage:BlobStorageConnectionString' not found.");
-        _blobServiceClient = new BlobServiceClient(blobConnectionsString);
-        string blobContainerName = _config["BlobStorage:ContainerName"] ?? 
-            throw new ConfigurationErrorsException("Configuration setting 'BlobStorage:ContainerName' not found.");
-        _blobContainerClient = _blobServiceClient.GetBlobContainerClient(blobContainerName);
-        _blobStorageName = $"Appointments_LocationId_{_locationId}.json";
-        int totalDays = _config.GetValue<int>("NexusApi:TotalDays");
-        if (totalDays < 1)
-        {
-            totalDays = 7;
-        }
+        int totalDays = 180;
         _startDate = DateTime.Today.AddDays(1);
         _endDate = _startDate.AddDays(totalDays);
+        _runBlobStorageTests = _config["TestFlags:EnableBlobStorageTests"] == "true";
     }
 
     [Fact]
     public void BlobCache_CacheAppointments_SavesExpectedAppointments()
     {
+        if (!_runBlobStorageTests)
+        {
+            _output.WriteLine("Skipping test. Enable Blob Storage tests in local.test.settings.json to run this test.");
+            return;
+        }
         _output.WriteLine("Running Test BlobCache_CacheAppointments_SavesExpectedAppointments");
         _output.WriteLine($"Total Scenerios: {MaxScenerioId + 1}");
         // Go through each Scenerio
@@ -87,10 +81,9 @@ public class AppointmentCacheBlobStorageIntegrationTests
                 Assert.Equal(appointments[i].Duration, cachedAppointments[i].Duration);
             }
             _output.WriteLine($"Scenerio: {scenerioId} - Passed");
+            // Clean up
+            cache.ClearCache(_locationId);
         }
-
-        // Clean up
-        ClearCache();
     }
 
 
@@ -99,13 +92,6 @@ public class AppointmentCacheBlobStorageIntegrationTests
     private AppointmentCacheBlobStorage CreateAppointmentCache()
     {
         return new AppointmentCacheBlobStorage(_config, _logger, new Tracer());
-    }
-
-    // Clear the cache
-    private void ClearCache()
-    {
-        BlobClient blobClient = _blobContainerClient.GetBlobClient(_blobStorageName);
-        blobClient.DeleteIfExists();
     }
 
 #endregion

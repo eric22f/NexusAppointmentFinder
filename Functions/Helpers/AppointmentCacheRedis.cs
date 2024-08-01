@@ -65,6 +65,18 @@ public class AppointmentCacheRedis : AppointmentCacheBase
         }
         return appointments;
     }
+
+    // Clear the cache for a location
+    public override void ClearCache(int locationId)
+    {
+        // Clear all appointments for the location
+        var keys = _redisDatabase.Multiplexer.GetServer(_redisDatabase.Multiplexer.GetEndPoints()[0]).Keys(pattern: $"{locationId}-*");
+        foreach (var key in keys)
+        {
+            _redisDatabase.KeyDelete(key);
+        }
+    }
+
     #region Private Methods
 
     // Generate a unique key used to cache all open appointments for a given location on a given date

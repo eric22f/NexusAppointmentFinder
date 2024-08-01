@@ -13,12 +13,12 @@ namespace NexusAzureFunctions.Services;
 // This service is responsible for processing messages from the Service Bus
 // and sending notifications to users assigned to the appointment location received
 public class NexusNotificationService(ILogger<NexusNotificationService> logger, Tracer tracer,
-    IConfiguration config, NexusDB nexusDB, EmailSender emailSender)
+    IConfiguration config, NexusManager nexusManager, EmailSender emailSender)
 {
     private readonly ILogger<NexusNotificationService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly Tracer _tracer = tracer ?? throw new ArgumentNullException(nameof(tracer));
     private readonly IConfiguration _config = config ?? throw new ArgumentNullException(nameof(config));
-    private readonly NexusDB _nexusDB = nexusDB ?? throw new ArgumentNullException(nameof(nexusDB));
+    private readonly NexusManager _nexusManager = nexusManager ?? throw new ArgumentNullException(nameof(NexusManager));
     private readonly EmailSender _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
 
     public async Task ProcessMessageAsync(ServiceBusReceivedMessage message, ServiceBusMessageActions messageActions)
@@ -106,7 +106,7 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
     private List<UserNotifications> GetUserNotificationList(int locationId)
     {
         // Get the list of users assigned to this location
-        var users = _nexusDB.GetUsersAssignedToLocation(locationId);
+        var users = _nexusManager.GetUsersAssignedToLocation(locationId);
 
         // Filter any users that do not have confirmed contact information
         users = users.Where(u => u.EmailConfirmed || u.AlternateEmailConfirmed || u.PhoneConfirmed).ToList();
@@ -193,6 +193,11 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
     // Send SMS notification
     private bool SendSms(string? phone, int phoneProviderId, string smsSubject, string smsBody)
     {
+        if (_emailSender.IsEnabled) {
+            _logger.LogWarning($"[{_tracer.Id}] Smtp is not enabled. SMS notifications will not be sent.");
+            return false;
+        }
+
         // Send SMS notification
         if (string.IsNullOrWhiteSpace(phone))
         {

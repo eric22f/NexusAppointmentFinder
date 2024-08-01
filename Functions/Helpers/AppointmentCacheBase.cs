@@ -10,6 +10,7 @@ public abstract class AppointmentCacheBase
     protected Dictionary<string, Appointment>? _appointmentsCache;
     protected abstract List<Appointment> GetCachedAppointments(int locationId, DateTime startDate, DateTime endDate);
     public abstract void CacheAppointments(int locationId, DateTime startDate, DateTime endDate, List<Appointment> appointments);
+    public abstract void ClearCache(int locationId);
 
     // Load appointments from cache
     public void LoadCachedAppointments(int locationId, DateTime startDate, DateTime endDate)
@@ -24,7 +25,7 @@ public abstract class AppointmentCacheBase
             }
         }
     }
-
+ 
     // Check if this appointment is not in the cache
     // LoadCachedAppointments must be called before this method
     public virtual bool IsAppointmentNew(Appointment appointment) 
@@ -43,21 +44,6 @@ public abstract class AppointmentCacheBase
         {
             throw new InvalidOperationException("Appointments cache is not initialized.");
         }
-        return _appointmentsCache.Values.ToList();
-    }
-
-    // Group appointments by date
-    protected static Dictionary<DateTime, List<Appointment>> GetAppointmentsByDate(List<Appointment> appointments)
-    {
-        Dictionary<DateTime, List<Appointment>> appointmentsByDate = [];
-        foreach (Appointment appointment in appointments)
-        {
-            if (!appointmentsByDate.ContainsKey(appointment.Date))
-            {
-                appointmentsByDate[appointment.Date] = [];
-            }
-            appointmentsByDate[appointment.Date].Add(appointment);
-        }
-        return appointmentsByDate;
+        return [.. _appointmentsCache.Values];
     }
 }

@@ -87,7 +87,41 @@ public class AppointmentCacheSqlDatabase : AppointmentCacheBase
 
         return appointments;
     }
-    
+
+    // Clear the appointments for the location
+    public override void ClearCache(int locationId)
+    {
+        int retry = 3;
+        int retryCount = 0;
+
+        while (retryCount < retry)
+        {
+            try
+            {
+                using SqlConnection connection = new(_connectionString);
+                string query = "DELETE FROM NexusAppointmentsAvailability WHERE LocationId = @LocationId";
+                SqlCommand command = new(query, connection);
+                command.Parameters.AddWithValue("@LocationId", locationId);
+                connection.Open();
+                command.ExecuteNonQuery();
+                // Done
+                break;
+            }
+            catch (SqlException ex) when (ex.Number == -2 && retryCount++ < retry)
+            {
+                _logger.LogWarning($"[{_tracer.Id}] Timeout exception occurred. Retry attempt {retryCount} of {retry}...");
+                Thread.Sleep(2000);
+                continue;
+            }
+            catch (InvalidOperationException) when (retryCount++ < retry)
+            {
+                _logger.LogWarning($"[{_tracer.Id}] Invalid Operation exception occurred. Retry attempt {retryCount} of {retry}...");
+                Thread.Sleep(2000);
+                continue;
+            }
+        }
+    }
+
     #region Private Methods
 
     // Clear any existing appointments for the location by date range

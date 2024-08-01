@@ -36,17 +36,22 @@ var host = new HostBuilder()
         services.AddTransient<NexusNotificationService>();
         services.AddScoped<Tracer>();
         services.AddScoped<NexusDB>();
+        services.AddScoped<NexusBlob>();
+        services.AddScoped<NexusManager>();
         services.AddScoped<EmailSender>();
 
         // Add Configuration
         services.AddSingleton<IConfiguration>(sp => context.Configuration);
 
         // Register Redis connection multiplexer
-        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        if (configuration["Redis:Enabled"] == "true")
         {
-            string redisConnectionString = configuration["RedisConnectionString"] ?? throw new ConfigurationErrorsException("Configuration setting 'RedisConnectionString' not found.");
-            return ConnectionMultiplexer.Connect(redisConnectionString);
-        });
+            services.AddSingleton<IConnectionMultiplexer>(sp =>
+            {
+                string redisConnectionString = configuration["RedisConnectionString"] ?? throw new ConfigurationErrorsException("Configuration setting 'RedisConnectionString' not found.");
+                return ConnectionMultiplexer.Connect(redisConnectionString);
+            });
+        }
 
         // Register AppointmentCacheRedis service
         services.AddSingleton<AppointmentCacheRedis>();

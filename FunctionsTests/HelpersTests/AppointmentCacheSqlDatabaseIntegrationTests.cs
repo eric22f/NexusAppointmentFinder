@@ -20,6 +20,7 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
     private readonly DateTime _endDate;
     private readonly int _locationId = 1234;
     private const int MaxScenerioId = 7;
+    private readonly bool _runDatabaseTests;
 
     public AppointmentCacheSqlDatabaseIntegrationTests(ITestOutputHelper output)
     {
@@ -27,6 +28,7 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
 
         var configurationBuilder = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
             .AddJsonFile("local.test.settings.json", optional: true, reloadOnChange: true);
         _config = configurationBuilder.Build();
 
@@ -38,18 +40,20 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
         _logger = loggerFactory.CreateLogger<AppointmentCacheSqlDatabase>();
 
         _connectionString = _config["SqlDatabase:SqlConnectionString"] ?? throw new ConfigurationErrorsException("Configuration setting 'SqlDatabase:SqlConnectionString' not found.");
-        int totalDays = _config.GetValue<int>("NexusApi:TotalDays");
-        if (totalDays < 1)
-        {
-            totalDays = 7;
-        }
+        int totalDays = 180;
         _startDate = DateTime.Today.AddDays(1);
         _endDate = _startDate.AddDays(totalDays);
+        _runDatabaseTests = _config["TestFlags:EnableDatabaseTests"] == "true";
     }
 
     [Fact]
     public void SqlCache_CacheAppointments_SavesExpectedAppointments()
     {
+        if (!_runDatabaseTests)
+        {
+            _output.WriteLine("Skipping test. Enable database tests in local.test.settings.json to run this test.");
+            return;
+        }
         _output.WriteLine("Running Test SqlCache_CacheAppointments_SavesExpectedAppointments");
         _output.WriteLine($"Total Scenerios: {MaxScenerioId + 1}");
         // Go through each Scenerio
@@ -83,7 +87,6 @@ public class AppointmentCacheSqlDatabaseIntegrationTests
         // Clean up
         ClearCache();
     }
-
 
 #region Private Functions
 

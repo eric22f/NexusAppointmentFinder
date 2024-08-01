@@ -18,6 +18,7 @@ public class NexusAppointmentServiceIntegrationTests
     {
         _config = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("local.settings.json")
             .AddJsonFile("local.test.settings.json")
             .Build();
 
@@ -26,7 +27,7 @@ public class NexusAppointmentServiceIntegrationTests
 
     [Fact]
     // Test the NexusAppointmentService.ProcessAppointments method
-    // This will create one new service bus messages if enabled in local.test.settings.json
+    // This will create one new service bus messages if it is enabled in local.settings.json
     public async Task GetAppointmentAsync_ReceivesSingleAppointment_SubmitsAppointment()
     {
         // Arrange
@@ -48,7 +49,7 @@ public class NexusAppointmentServiceIntegrationTests
 
     [Fact]
     // Test the NexusAppointmentService.ProcessAppointments method
-    // This will create new 300+ service bus messages if enabled in local.test.settings.json
+    // This will create new 50+ service bus messages if the appointments are considered new and not cached
     public async Task GetAppointmentAsync_ReceivesAppointments_SubmitsAppointments()
     {
         // Arrange
@@ -82,6 +83,7 @@ public class NexusAppointmentServiceIntegrationTests
     private static List<HttpAppointment> CreateHttpAppointmentsList(int scenerioId)
     {
         List<HttpAppointment> appointments = [];
+        var firstAppointmentDateTime = DateTime.Today.AddDays(1).AddHours(8); // Start at 8 am tomorrow
         switch (scenerioId) 
         {
             case 0:
@@ -99,14 +101,31 @@ public class NexusAppointmentServiceIntegrationTests
                 appointments.Add(new HttpAppointment { active = 1, total = 3, pending = 0, conflicts = 0, duration = 10, timestamp = DateTime.Now.AddDays(7).ToString(), remote = false });
                 break;
             case 3:
+                // For 7 days every day has a consecutive appointment every 10 minutes with an opening starting 8 am to 6 pm
+                for (int i = 0; i < 7; i++)
+                {
+                    var appointmentDateTime = firstAppointmentDateTime.AddDays(i);
+                    while (appointmentDateTime.Hour < 18)
+                    {
+                        // Start at a later hour every day
+                        if (appointmentDateTime.Hour >= 8 + i) {
+                            appointments.Add(new HttpAppointment { active = 1, total = 3, pending = 0, conflicts = 0, duration = 10, timestamp = appointmentDateTime.ToString(), remote = false });
+                         }
+                        appointmentDateTime = appointmentDateTime.AddMinutes(10);
+                    }
+                }
+                break;
+            case 4:
                 // For 180 days every day has a consecutive appointment every 10 minutes with an opening starting 8 am to 6 pm
-                var firstAppointmentDateTime = DateTime.Today.AddDays(1).AddHours(8);
                 for (int i = 0; i < 180; i++)
                 {
                     var appointmentDateTime = firstAppointmentDateTime.AddDays(i);
                     while (appointmentDateTime.Hour < 18)
                     {
-                        appointments.Add(new HttpAppointment { active = 1, total = 3, pending = 0, conflicts = 0, duration = 10, timestamp = appointmentDateTime.ToString(), remote = false });
+                        // Start at a later hour every day
+                        if (appointmentDateTime.Hour >= 8 + i % 9) {
+                            appointments.Add(new HttpAppointment { active = 1, total = 3, pending = 0, conflicts = 0, duration = 10, timestamp = appointmentDateTime.ToString(), remote = false });
+                        }
                         appointmentDateTime = appointmentDateTime.AddMinutes(10);
                     }
                 }

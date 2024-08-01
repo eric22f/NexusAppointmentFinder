@@ -31,9 +31,9 @@ namespace NexusAzureFunctions.Helpers
         // Add the appointment to the Blob Storage
         public override void CacheAppointments(int locationId, DateTime startDate, DateTime endDate, List<Appointment> appointments)
         {
+            string blobName = $"Appointments_LocationId_{locationId}.json";
             try
             {
-                string blobName = $"Appointments_LocationId_{locationId}.json";
                 BlobContainerClient containerClient = _blobServiceClient.GetBlobContainerClient(_blobContainerName);
                 BlobClient blobClient = containerClient.GetBlobClient(blobName);
 
@@ -58,7 +58,7 @@ namespace NexusAzureFunctions.Helpers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[_tracer.Id] Error caching appointments to Blob Storage: {ex.Message}");
+                _logger.LogError($"[_tracer.Id] Error caching appointments to Blob Storage '{blobName}': {ex.Message}");
                 throw;
             }
         }
@@ -66,24 +66,35 @@ namespace NexusAzureFunctions.Helpers
         // Get the appointments from the Blob Storage by location and date range
         protected override List<Appointment> GetCachedAppointments(int locationId, DateTime startDate, DateTime endDate)
         {
+            List<Appointment> appointments = GetCachedAppointments(locationId);
+            return appointments.Where(a => a.Date >= startDate && a.Date.Date <= endDate).ToList();
+        }
+
+        // Clear the appointment cache for a location
+        public override void ClearCache(int locationId)
+        {
+            string blobName = $"Appointments_LocationId_{locationId}.json";
             try
             {
-                List<Appointment> appointments = GetCachedAppointments(locationId);
-                return appointments.Where(a => a.Date >= startDate && a.Date.Date <= endDate).ToList();
+                BlobContainerClient containerClient = _blobServiceClient.GetBlobContainerClient(_blobContainerName);
+                BlobClient blobClient = containerClient.GetBlobClient(blobName);
+                blobClient.DeleteIfExists();
+                _logger.LogInformation($"[_tracer.Id] Appointment cache cleared for blob: {blobName}");
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[_tracer.Id] Error retrieving cached appointments from Blob Storage: {ex.Message}");
+                _logger.LogError($"[_tracer.Id] Error clearing appointment cache to Blob Storage '{blobName}': {ex.Message}");
                 throw;
-            }
+            }            
         }
 
+        #region Private Methods
         // Get the all open appointments from the Blob Storage by location
         private List<Appointment> GetCachedAppointments(int locationId)
         {
+            string blobName = $"Appointments_LocationId_{locationId}.json";
             try
             {
-                string blobName = $"Appointments_LocationId_{locationId}.json";
                 BlobContainerClient containerClient = _blobServiceClient.GetBlobContainerClient(_blobContainerName);
                 BlobClient blobClient = containerClient.GetBlobClient(blobName);
 
@@ -102,9 +113,10 @@ namespace NexusAzureFunctions.Helpers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[_tracer.Id] Error retrieving cached appointments from Blob Storage: {ex.Message}");
+                _logger.LogError($"[_tracer.Id] Error retrieving cached appointments from Blob Storage '{blobName}': {ex.Message}");
                 throw;
             }
         }
     }
+#endregion
 }
