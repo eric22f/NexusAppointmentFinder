@@ -2,10 +2,12 @@ using System.Configuration;
 using Microsoft.Extensions.Configuration;
 using NexusAzureFunctions.Helpers;
 using Xunit;
+using Xunit.Abstractions;
 namespace NexusAzureFunctionsTests.HelpersTests;
 
 public class EmailSenderTests
 {
+    private readonly ITestOutputHelper _output;
     private readonly IConfiguration _config;
     private readonly EmailSender _emailSender;
     private readonly bool _enableUnitTests;
@@ -13,10 +15,11 @@ public class EmailSenderTests
     private readonly string _toSmsEmailAdress;
     private readonly string _toFullName;
 
-    public EmailSenderTests()
+    public EmailSenderTests(ITestOutputHelper output)
     {
         var configurationBuilder = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
             .AddJsonFile("local.test.settings.json", optional: true, reloadOnChange: true);
         _config = configurationBuilder.Build();
 
@@ -27,6 +30,7 @@ public class EmailSenderTests
         _toSmsEmailAdress = _config["Smtp:TestingToSmsEmail"] ?? throw new ConfigurationErrorsException("Missing configuration setting for 'Smtp:TestingToSmsEmail'");
 
         _emailSender = new EmailSender(_config);
+        _output = output;
     }
 
     [Fact]
@@ -34,7 +38,11 @@ public class EmailSenderTests
     {
         if (!_enableUnitTests)
         {
+            _output.WriteLine("Skipping test. Enable Email tests in local.test.settings.json to run this test.");
             return;
+        }
+        if (!_emailSender.IsEnabled) {
+            throw new ConfigurationErrorsException("Smtp is not enabled. Check configuration settings in 'local.settings.json'.");
         }
         // Arrange
         string subject = "Test - Nexus interview available";
@@ -52,7 +60,11 @@ public class EmailSenderTests
     {
         if (!_enableUnitTests)
         {
+            _output.WriteLine("Skipping test. Enable Email tests in local.test.settings.json to run this test.");
             return;
+        }
+        if (!_emailSender.IsEnabled) {
+            throw new ConfigurationErrorsException("Smtp is not enabled. Check configuration settings in 'local.settings.json'.");
         }
         // Arrange
         string subject = "Test - Nexus interview available";
