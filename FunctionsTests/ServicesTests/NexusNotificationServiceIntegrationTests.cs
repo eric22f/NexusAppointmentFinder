@@ -7,12 +7,12 @@ using Microsoft.Extensions.Logging;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Azure.Functions.Worker;
 using NexusAzureFunctionsTests.Helpers;
+
 namespace NexusAzureFunctionsTests.ServicesTests;
 
 public class NexusNotificationServiceIntegrationTests
 {
     private readonly IConfiguration _config;
-    private readonly ILoggerFactory _loggerFactory;
 
     public NexusNotificationServiceIntegrationTests()
     {
@@ -21,8 +21,6 @@ public class NexusNotificationServiceIntegrationTests
             .AddJsonFile("local.settings.json")
             .AddJsonFile("local.test.settings.json")
             .Build();
-
-        _loggerFactory = LoggerFactory.Create(builder => builder.AddConsole())!;
     }
 
     [Fact]
@@ -31,7 +29,7 @@ public class NexusNotificationServiceIntegrationTests
         // Arrange
         var mockServiceBusMessage =  CreateServiceBusMessage(1);
         var mockMessageActions = new Mock<ServiceBusMessageActions>();
-        var mockLogger = new Mock<ILogger<NexusNotificationService>>();
+        var mockLogger = MockLoggerCreator.Create<NexusNotificationService>();
         var notificationService = CreateNewNotificationService(mockLogger);
 
         // Set up the mock message actions
@@ -59,9 +57,9 @@ public class NexusNotificationServiceIntegrationTests
         // Arrange
         var mockServiceBusMessage =  CreateServiceBusMessage(7);
         var mockMessageActions = new Mock<ServiceBusMessageActions>();
-        var mockLogger = new Mock<ILogger<NexusNotificationService>>();
+        var mockLogger = MockLoggerCreator.Create<NexusNotificationService>();
         var notificationService = CreateNewNotificationService(mockLogger);
-
+        
         // Set up the mock message actions
         mockMessageActions.Setup(m => m.CompleteMessageAsync(mockServiceBusMessage, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
