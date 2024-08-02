@@ -5,13 +5,13 @@ using NexusAzureFunctions.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Configuration;
+using Azure.Identity;
 
 namespace NexusAzureFunctions.Helpers
 {
     public class AppointmentCacheBlobStorage : AppointmentCacheBase
     {
-        private readonly string _blobContainerName;
-        private readonly BlobServiceClient _blobServiceClient;
+        private readonly BlobContainerClient _blobContainerClient;
         private readonly ILogger<AppointmentCacheBlobStorage> _logger;
         private readonly Tracer _tracer;
 
@@ -19,11 +19,22 @@ namespace NexusAzureFunctions.Helpers
             Tracer tracer)
         {
             var config = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _blobContainerName = config["BlobStorage:ContainerName"] ?? 
+            string accountName = config["BlobStorage:StorageAccountName"] + "";
+            BlobServiceClient blobServiceClient;
+            if (string.IsNullOrEmpty(accountName))
+            {
+                string blobConnectionsString = config["AzureWebJobsStorage"] ??
+                    config["Values:AzureWebJobsStorage"] ?? 
+                    throw new ConfigurationErrorsException("Configuration setting 'AzureWebJobsStorage' not found.");
+                blobServiceClient = new BlobServiceClient(blobConnectionsString);
+            }
+            else
+            {
+                blobServiceClient = new BlobServiceClient(new Uri($"https://{accountName}.blob.core.windows.net"), new DefaultAzureCredential());
+            }
+            string blobContainerName = config["BlobStorage:ContainerName"] ?? 
                 throw new ConfigurationErrorsException("Configuration setting 'BlobStorage:ContainerName' not found.");
-            var blobStorageConnectionString = config["BlobStorage:BlobStorageConnectionString"] ?? 
-                throw new ConfigurationErrorsException("Configuration setting 'BlobStorage:BlobStorageConnectionString' not found.");
-            _blobServiceClient = new BlobServiceClient(blobStorageConnectionString);
+            _blobContainerClient = blobServiceClient.GetBlobContainerClient(blobContainerName);
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _tracer = tracer ?? throw new ArgumentNullException(nameof(tracer));
         }
@@ -34,8 +45,7 @@ namespace NexusAzureFunctions.Helpers
             string blobName = $"Appointments_LocationId_{locationId}.json";
             try
             {
-                BlobContainerClient containerClient = _blobServiceClient.GetBlobContainerClient(_blobContainerName);
-                BlobClient blobClient = containerClient.GetBlobClient(blobName);
+                BlobClient blobClient = _blobContainerClient.GetBlobClient(blobName);
 
                 // Get current appointments that have been cached
                 // Remove older appointments that have already passed
@@ -76,8 +86,7 @@ namespace NexusAzureFunctions.Helpers
             string blobName = $"Appointments_LocationId_{locationId}.json";
             try
             {
-                BlobContainerClient containerClient = _blobServiceClient.GetBlobContainerClient(_blobContainerName);
-                BlobClient blobClient = containerClient.GetBlobClient(blobName);
+                BlobClient blobClient = _blobContainerClient.GetBlobClient(blobName);
                 blobClient.DeleteIfExists();
                 _logger.LogInformation($"[_tracer.Id] Appointment cache cleared for blob: {blobName}");
             }
@@ -95,8 +104,7 @@ namespace NexusAzureFunctions.Helpers
             string blobName = $"Appointments_LocationId_{locationId}.json";
             try
             {
-                BlobContainerClient containerClient = _blobServiceClient.GetBlobContainerClient(_blobContainerName);
-                BlobClient blobClient = containerClient.GetBlobClient(blobName);
+                BlobClient blobClient = _blobContainerClient.GetBlobClient(blobName);
 
                 if (blobClient.Exists())
                 {

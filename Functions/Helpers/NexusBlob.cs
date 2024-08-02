@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Azure.Identity;
 using Azure.Storage.Blobs;
 using System.Configuration;
 using NexusAzureFunctions.Models;
@@ -8,7 +9,6 @@ namespace NexusAzureFunctions.Helpers;
 
 public class NexusBlob
 {
-    private readonly BlobServiceClient? _blobServiceClient;
     private readonly BlobContainerClient? _blobContainerClient;
     private readonly string _blobStorageName;
 
@@ -16,16 +16,26 @@ public class NexusBlob
     {
         if (config["BlobStorage:Enabled"] == "true")
         {
-            string blobConnectionsString = config["BlobStorage:BlobStorageConnectionString"] ?? 
-                throw new ConfigurationErrorsException("Configuration setting 'BlobStorage:BlobStorageConnectionString' not found.");
-            _blobServiceClient = new BlobServiceClient(blobConnectionsString);
+            // Conect to Blob Storage
+            string accountName = config["BlobStorage:StorageAccountName"] + "";
+            BlobServiceClient blobServiceClient;
+            if (string.IsNullOrEmpty(accountName))
+            {
+                string blobConnectionsString = config["AzureWebJobsStorage"] ??
+                    config["Values:AzureWebJobsStorage"] ?? 
+                    throw new ConfigurationErrorsException("Configuration setting 'AzureWebJobsStorage' not found.");
+                blobServiceClient = new BlobServiceClient(blobConnectionsString);
+            }
+            else
+            {
+                blobServiceClient = new BlobServiceClient(new Uri($"https://{accountName}.blob.core.windows.net"), new DefaultAzureCredential());
+            }
             string blobContainerName = config["BlobStorage:ContainerName"] ?? 
                 throw new ConfigurationErrorsException("Configuration setting 'BlobStorage:ContainerName' not found.");
-            _blobContainerClient = _blobServiceClient.GetBlobContainerClient(blobContainerName);
+            _blobContainerClient = blobServiceClient.GetBlobContainerClient(blobContainerName);
         }
         else
         {
-            _blobServiceClient = null;
             _blobContainerClient = null;
         }
         _blobStorageName = "UserNotifications.json";
