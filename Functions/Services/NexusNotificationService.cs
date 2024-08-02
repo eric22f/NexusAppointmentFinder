@@ -193,14 +193,18 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
     // Send SMS notification
     private bool SendSms(string? phone, int phoneProviderId, string smsSubject, string smsBody)
     {
-        if (_emailSender.IsEnabled) {
+        if (!_emailSender.IsEnabled) {
             _logger.LogWarning($"[{_tracer.Id}] Smtp is not enabled. SMS notifications will not be sent.");
             return false;
         }
 
+        // Strip non-numeric characters from the phone number
+        phone = new string(phone?.Where(char.IsDigit).ToArray());
+
         // Send SMS notification
-        if (string.IsNullOrWhiteSpace(phone))
+        if (!ValidatePhoneNumber(phone))
         {
+            _logger.LogWarning($"[{_tracer.Id}] Invalid phone number '{phone}'. SMS notifications will not be sent.");
             return false;
         }
         string phoneEmail = GetPhoneEmail(phone, phoneProviderId);
@@ -219,5 +223,34 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
             1 => phone + "@tmomail.net",
             _ => throw new Exception($"Phone provider id {phoneProviderId} is not supported."),
         };
+    }
+
+    // Validate the phone number
+    private static bool ValidatePhoneNumber(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            return false;
+        }
+
+        // Validate the phone number
+        if (phone.Length != 10 || !phone.All(char.IsDigit))
+        {
+            return false;
+        }
+
+        // Check for invalid area codes
+        if (phone.StartsWith('0') || phone.StartsWith('1') || phone.StartsWith("555") || phone.StartsWith("800"))
+        {
+            return false;
+        }
+
+        // Check for invalid phone numbers
+        if (phone == "1234567890" || phone == "9876543210" || phone.EndsWith("8675309"))
+        {
+            return false;
+        }
+
+        return true;
     }
 }
