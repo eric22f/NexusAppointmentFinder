@@ -28,7 +28,7 @@ public class NexusBlob
             _blobServiceClient = null;
             _blobContainerClient = null;
         }
-        _blobStorageName = "UserNotifications";
+        _blobStorageName = "UserNotifications.json";
     }
 
     // Get the users assigned to a location
@@ -46,6 +46,7 @@ public class NexusBlob
             string json = streamReader.ReadToEnd();
             userNotifications = JsonSerializer.Deserialize<List<UserNotifications>>(json) ?? [];
         }
+
         // Filter to the location id
         userNotifications = userNotifications.Where(u => u.LocationId == locationId).ToList();
         return userNotifications;

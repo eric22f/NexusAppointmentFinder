@@ -1,0 +1,17 @@
+[{
+    "UserId": 1,
+    "Email": "eric22f@gmail.com",
+    "AlternateEmail": "",
+    "Phone": "123-456-7890",
+    "PhoneProviderId": 1,
+    "NotifyByEmail": false,
+    "NotifyBySms": true,
+    "FirstName": "For",
+    "LastName": "Testing",
+    "EmailConfirmed": true,
+    "AlternateEmailConfirmed": false,
+    "PhoneConfirmed": true,
+    "LocationId": 1234,
+    "LocationName": "TEST",
+    "LocationDescription": "This is only a test"
+}]
