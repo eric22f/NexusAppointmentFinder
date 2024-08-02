@@ -1,4 +1,5 @@
 
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -6,7 +7,7 @@ namespace NexusAzureFunctionsTests.Helpers;
 
 public class MockLoggerCreator
 {
-    // Create a mock logger that also writes to the console
+    // Create a mock logger that also writes to the debug output and console
     public static Mock<ILogger<T>> Create<T>()
     {
         var mockLogger = new Mock<ILogger<T>>();
@@ -19,6 +20,7 @@ public class MockLoggerCreator
         )).Callback((LogLevel logLevel, EventId eventId, object state, Exception exception, Delegate formatter) =>
         {
             var logMessage = formatter.DynamicInvoke(state, exception) as string;
+            Debug.WriteLine($"[{logLevel}] {logMessage}");
             Console.WriteLine($"[{logLevel}] {logMessage}");
         });
         return mockLogger;
