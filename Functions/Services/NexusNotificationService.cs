@@ -85,12 +85,6 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
                 }
             }
 
-            // Get the dates of all appointments
-            var appointmentDates = appointments.Select(a => a.Date.Date).ToList();
-
-            // Get the time slot for the first appointment
-            var timeSlot = appointments.First().Date.TimeOfDay;
-
             // Complete the message
             await messageActions.CompleteMessageAsync(message);
         }
