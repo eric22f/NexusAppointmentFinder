@@ -27,6 +27,10 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
         {
             // Process the message
             _logger.LogInformation($"[{_tracer.Id}] Processing message: {message.MessageId}");
+            TotalAppointmentsReceived = 0;
+            TotalEmailNotificationsSent = 0;
+            TotalSmsNotificationsSent = 0;
+            LocationProccessed = 0;
 
             // Get appointments from the message body
             var messageBody = message.Body.ToString();
@@ -38,10 +42,12 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
                 await messageActions.CompleteMessageAsync(message);
                 return;
             }
+            TotalAppointmentsReceived = appointments.Count;
             _logger.LogInformation($"[{_tracer.Id}] {appointments.Count} Appointments found from Message body: {messageBody}");
 
             // Get the location id from the appointments
             var locationId = appointments.First().LocationId;
+            LocationProccessed = locationId;
 
             // Get the list of everyone to be notified for this location
             var notificationList = GetUserNotificationList(locationId);
@@ -83,6 +89,7 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
                     int maxTextLength = _config.GetValue<int>("Notifications:MaxTextLength");
                     SendAllAppointmentSmsNotifications(appointments, notificationList, maxTextLength);
                 }
+                TotalSmsNotificationsSent = smsList.Count;
             }
 
             // Complete the message
@@ -95,6 +102,11 @@ public class NexusNotificationService(ILogger<NexusNotificationService> logger, 
             await messageActions.DeadLetterMessageAsync(message);
         }
     }
+
+    public int TotalAppointmentsReceived { get; private set; }
+    public int TotalEmailNotificationsSent { get; private set; }
+    public int TotalSmsNotificationsSent { get; private set; }
+    public int LocationProccessed { get; private set; }
 
     // Get the list of users assigned to this location
     private List<UserNotifications> GetUserNotificationList(int locationId)

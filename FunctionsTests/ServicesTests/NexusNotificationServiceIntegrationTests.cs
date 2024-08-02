@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Azure.Functions.Worker;
 using NexusAzureFunctionsTests.Helpers;
+using NexusAzureFunctions.Models;
 
 namespace NexusAzureFunctionsTests.ServicesTests;
 
@@ -39,6 +40,9 @@ public class NexusNotificationServiceIntegrationTests
         await notificationService.ProcessMessageAsync(mockServiceBusMessage, mockMessageActions.Object);
 
         // Assert
+        Assert.True(notificationService.TotalAppointmentsReceived == 1, "1 Appointment was expected to be received but was not.");
+        Assert.True(notificationService.TotalSmsNotificationsSent == 1, "1 Notification was expected to be sent by Sms but was not.");
+
         // No Error Logs
         mockLogger.Verify(
             x => x.Log(
@@ -59,6 +63,7 @@ public class NexusNotificationServiceIntegrationTests
         var mockMessageActions = new Mock<ServiceBusMessageActions>();
         var mockLogger = MockLoggerCreator.Create<NexusNotificationService>();
         var notificationService = CreateNewNotificationService(mockLogger);
+        List<Appointment> appointments = JsonConvert.DeserializeObject<List<Appointment>>(mockServiceBusMessage.Body.ToString()) ?? [];
         
         // Set up the mock message actions
         mockMessageActions.Setup(m => m.CompleteMessageAsync(mockServiceBusMessage, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
@@ -67,6 +72,9 @@ public class NexusNotificationServiceIntegrationTests
         await notificationService.ProcessMessageAsync(mockServiceBusMessage, mockMessageActions.Object);
 
         // Assert
+        Assert.True(notificationService.TotalAppointmentsReceived == appointments.Count, $"{appointments.Count} Appointments were expected to be received but result was {notificationService.TotalAppointmentsReceived}.");
+        Assert.True(notificationService.TotalSmsNotificationsSent == 1, $"1 Notification was expected to be sent by Sms but result was {notificationService.TotalSmsNotificationsSent}.");
+
         // No Error Logs
         mockLogger.Verify(
             x => x.Log(
