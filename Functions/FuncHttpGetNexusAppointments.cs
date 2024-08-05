@@ -27,7 +27,11 @@ public class FuncHttpGetNexusAppointments(ILogger<FuncHttpGetNexusAppointments> 
         
             if (!_appointmentsSvc.IsProcessAppointmentsSuccess)
             { 
-                return new BadRequestObjectResult($"An error occurred processing appointments. (Reference trace log id: {_tracer.Id})");
+                if (!string.IsNullOrEmpty(_appointmentsSvc.FriendlyErrorMessage))
+                {
+                    return new BadRequestObjectResult(_appointmentsSvc.FriendlyErrorMessage + $"\n(Reference code: {_tracer.Id})");
+                }
+                return new BadRequestObjectResult($"An error occurred processing appointments. (Reference code: {_tracer.Id})");
             }
             string plural = count == 1 ? "" : "s";
             string display = count == 0 ? "" : $"\n{string.Join("\n", availableAppointments.Select(a => a.ToString()))}";

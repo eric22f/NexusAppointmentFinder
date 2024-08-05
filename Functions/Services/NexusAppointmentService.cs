@@ -27,6 +27,7 @@ public class NexusAppointmentService
     private AppointmentCacheBase? _appointmentsCache;
 
     public bool IsProcessAppointmentsSuccess { get; private set; }
+    public string FriendlyErrorMessage { get; private set; } = "";
     public int TotalDays => _totalDays;
 
     public NexusAppointmentService(
@@ -60,6 +61,7 @@ public class NexusAppointmentService
     // Returns all available appointments and sets IsProcessAppointmentsSuccess to true if successful
     public async Task<List<Appointment>> ProcessAppointments()
     {
+        FriendlyErrorMessage = "";
         if (_locationId == 0)
         {
             throw new InvalidOperationException($"[{_traceId}] Location ID is not set. Cannot process appointments.");
@@ -108,6 +110,11 @@ public class NexusAppointmentService
             CacheOpenAppointments(openAppointments);
 
             IsProcessAppointmentsSuccess = true;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, $"[{_traceId}] Error fetching appointment data from Nexus API.");
+            FriendlyErrorMessage = "A problem occured pulling appointmentd data from the Nexus Website.  Please try again later.";
         }
         catch (Exception ex)
         {
